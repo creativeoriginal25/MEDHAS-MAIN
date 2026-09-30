@@ -9,8 +9,9 @@ from app.auth.dependencies import get_current_user, require_role
 from app.auth.security import hash_pin
 from app.auth.rate_limit import check_admin_reset_rate_limit
 from app.models.user import User, UserRole
-from app.models.audit import AuditLog, PinResetLog
-from app.models.attendance import Section, TimetableBlock
+from app.models.audit import AuditLog, PinResetLog, LoginSession
+from app.models.attendance import Section, TimetableBlock, DailyLog
+from app.models.content import Department
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -38,6 +39,80 @@ class BlockCreateRequest(BaseModel):
     order_index: int
     subject: str
     periods: int
+
+
+# --- Overview & Monitoring ---
+
+@router.get("/overview")
+def get_admin_overview(
+    user: User = Depends(require_role("attendance_admin", "platform_admin")),
+    db: Session = Depends(get_db),
+):
+    """Get high-level metrics and recent sign-ins."""
+    total_students = db.query(User).count()
+    total_sessions = db.query(LoginSession).count()
+    total_logs = db.query(DailyLog).count()
+    total_sections = db.query(Section).count()
+
+    recent_sessions = (
+        db.query(LoginSession)
+        .order_by(LoginSession.created_at.desc())
+        .limit(15)
+        .all()
+    )
+
+    recent_logins = []
+    for s in recent_sessions:
+        u = db.query(User).filter(User.id == s.user_id).first()
+        sec = db.query(Section).filter(Section.id == u.section_id).first() if u and u.section_id else None
+        recent_logins.append({
+            "id": s.id,
+            "register_number": u.register_number if u else "Unknown",
+            "display_name": u.display_name if u else "Unknown",
+            "branch": sec.branch if sec else "CSE",
+            "section_label": sec.section_label if sec else "-",
+            "platform": s.platform,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+            "last_seen_at": s.last_seen_at.isoformat() if s.last_seen_at else None,
+        })
+
+    return {
+        "total_students": total_students,
+        "total_sessions": total_sessions,
+        "total_attendance_logs": total_logs,
+        "total_sections": total_sections,
+        "recent_logins": recent_logins,
+    }
+
+
+@router.get("/sessions")
+def list_sessions(
+    limit: int = Query(default=50, le=200),
+    user: User = Depends(require_role("attendance_admin", "platform_admin")),
+    db: Session = Depends(get_db),
+):
+    """List recent login sessions."""
+    sessions = (
+        db.query(LoginSession)
+        .order_by(LoginSession.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    result = []
+    for s in sessions:
+        u = db.query(User).filter(User.id == s.user_id).first()
+        sec = db.query(Section).filter(Section.id == u.section_id).first() if u and u.section_id else None
+        result.append({
+            "id": s.id,
+            "register_number": u.register_number if u else "Unknown",
+            "display_name": u.display_name if u else "Unknown",
+            "branch": sec.branch if sec else "CSE",
+            "section_label": sec.section_label if sec else "-",
+            "platform": s.platform,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+            "last_seen_at": s.last_seen_at.isoformat() if s.last_seen_at else None,
+        })
+    return result
 
 
 # --- Attendance Admin ---
@@ -82,26 +157,51 @@ def list_students(
     user: User = Depends(require_role("attendance_admin", "platform_admin")),
     db: Session = Depends(get_db),
 ):
-    """List students for admin management."""
+    """List students with branch, section, and attendance stats."""
     query = db.query(User)
-    if branch:
+    if branch and branch.upper() != "ALL":
         sections = db.query(Section.id).filter(Section.branch == branch.upper()).all()
         section_ids = [s.id for s in sections]
         query = query.filter(User.section_id.in_(section_ids))
-    if q:
-        search = f"%{q}%"
-        query = query.filter(User.register_number.ilike(search))
+    if q and q.strip():
+        search = f"%{q.strip()}%"
+        query = query.filter(
+            (User.register_number.ilike(search)) | (User.display_name.ilike(search))
+        )
 
     students = query.order_by(User.register_number).limit(100).all()
-    return [
-        {
+    result = []
+    for s in students:
+        sec = db.query(Section).filter(Section.id == s.section_id).first() if s.section_id else None
+        
+        # Calculate overall attendance
+        logs = db.query(DailyLog).filter(DailyLog.user_id == s.id).all()
+        log_attended = sum(l.periods_present for l in logs)
+        log_total = sum(l.periods_total for l in logs)
+        
+        tot_attended = (s.baseline_attended or 0) + log_attended
+        tot_periods = (s.baseline_total or 0) + log_total
+        pct = round((tot_attended / tot_periods * 100), 1) if tot_periods > 0 else 0.0
+
+        last_sess = db.query(LoginSession).filter(LoginSession.user_id == s.id).order_by(LoginSession.created_at.desc()).first()
+
+        result.append({
             "id": s.id,
             "register_number": s.register_number,
             "display_name": s.display_name,
-            "section_id": s.section_id,
-        }
-        for s in students
-    ]
+            "branch": sec.branch if sec else "CSE",
+            "section_label": sec.section_label if sec else "-",
+            "academic_year": s.academic_year,
+            "current_semester": s.current_semester,
+            "baseline_attended": s.baseline_attended or 0,
+            "baseline_total": s.baseline_total or 0,
+            "total_attended": tot_attended,
+            "total_periods": tot_periods,
+            "attendance_percentage": pct,
+            "last_active": last_sess.created_at.isoformat() if last_sess and last_sess.created_at else None,
+            "roles": [r.role for r in s.roles],
+        })
+    return result
 
 
 # --- Section/Timetable Admin ---

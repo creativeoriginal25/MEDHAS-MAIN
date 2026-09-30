@@ -86,6 +86,7 @@ const MainLayout: React.FC = () => {
               if (tab) setSettingsTab(tab);
               setIsSettingsOpen(true);
             }}
+            onOpenAdmin={() => setActiveTab('admin')}
           />
         )}
         {activeTab === 'admin' && <Admin />}

@@ -22,10 +22,12 @@ import {
 
 interface ProfileProps {
   onOpenSettings?: (tab?: 'profile' | 'reminders' | 'security' | 'privacy' | 'server' | 'about') => void;
+  onOpenAdmin?: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
-  const { user, refreshUser } = useAuth();
+export const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onOpenAdmin }) => {
+  const { user, refreshUser, hasRole } = useAuth();
+  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -110,17 +112,38 @@ export const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
             </div>
           </div>
 
-          {onOpenSettings && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => onOpenSettings('profile')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <Settings size={14} />
-              <span>Settings & Preferences</span>
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {isAdmin && onOpenAdmin && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={onOpenAdmin}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  background: 'rgba(217, 119, 6, 0.15)',
+                  color: 'var(--accent-gold, #d97706)',
+                  border: '1.5px solid var(--accent-gold, #d97706)',
+                  fontWeight: 700,
+                }}
+              >
+                <ShieldCheck size={14} />
+                <span>Admin Console</span>
+              </button>
+            )}
+            {onOpenSettings && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onOpenSettings('profile')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <Settings size={14} />
+                <span>Settings & Preferences</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Academic Details Meta Grid */}

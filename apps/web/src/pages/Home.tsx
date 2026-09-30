@@ -19,7 +19,8 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
+  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
   const [dashboard, setDashboard] = useState<any>(null);
   const [todayBlocks, setTodayBlocks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,25 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
               <Sparkles size={14} color="var(--accent-gold)" />
               <span>Growth Hub</span>
             </button>
+            {isAdmin && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => setActiveTab('admin')}
+                style={{
+                  background: 'rgba(217, 119, 6, 0.14)',
+                  color: 'var(--accent-gold, #d97706)',
+                  border: '1.5px solid var(--accent-gold, #d97706)',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <ShieldCheck size={14} />
+                <span>Admin Console</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

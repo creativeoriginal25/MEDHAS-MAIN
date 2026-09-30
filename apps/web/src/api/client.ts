@@ -175,11 +175,20 @@ export const campusApi = {
 
 // --- ADMIN API ---
 export const adminApi = {
+  getOverview: () => api.get<any>('/admin/overview'),
+  getStudents: (branch?: string, q?: string) => {
+    const sp = new URLSearchParams();
+    if (branch && branch !== 'ALL') sp.append('branch', branch);
+    if (q) sp.append('q', q);
+    const qs = sp.toString() ? `?${sp.toString()}` : '';
+    return api.get<any[]>(`/admin/students${qs}`);
+  },
+  getSessions: (limit = 50) => api.get<any[]>(`/admin/sessions?limit=${limit}`),
   resetPin: (target_register_number: string, new_pin: string) =>
     api.post<any>('/admin/reset-pin', { target_register_number, new_pin }),
   assignRole: (register_number: string, role: string) =>
-    api.post<any>('/admin/assign-role', { register_number, role }),
+    api.post<any>('/admin/roles/assign', { register_number, role }),
   revokeRole: (register_number: string, role: string) =>
-    api.post<any>('/admin/revoke-role', { register_number, role }),
+    api.post<any>('/admin/roles/revoke', { register_number, role }),
   getAuditLogs: (limit = 50) => api.get<any[]>(`/admin/audit-logs?limit=${limit}`),
 };

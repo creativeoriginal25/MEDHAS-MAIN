@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, CalendarCheck, BookOpen, Sparkles, Building2 } from 'lucide-react';
+import { Home, CalendarCheck, BookOpen, Sparkles, Building2, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface BottomNavProps {
   activeTab: string;
@@ -7,6 +8,9 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
+  const { hasRole, user } = useAuth();
+  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
+
   return (
     <nav className="bottom-tab-bar">
       <button 
@@ -58,6 +62,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
         <span>Campus</span>
         {activeTab === 'campus' && <span className="tab-indicator" />}
       </button>
+
+      {isAdmin && (
+        <button 
+          type="button"
+          className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
+          onClick={() => setActiveTab('admin')}
+          style={{ color: 'var(--accent-gold, #d97706)' }}
+        >
+          <ShieldCheck size={19} />
+          <span>Admin</span>
+          {activeTab === 'admin' && <span className="tab-indicator" />}
+        </button>
+      )}
     </nav>
   );
 };

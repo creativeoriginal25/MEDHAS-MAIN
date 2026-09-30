@@ -30,7 +30,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onOpenSettings,
 }) => {
   const { user, logout, hasRole } = useAuth();
-  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin');
+  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleConfirmLogout = async () => {
@@ -120,23 +120,6 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
         {/* Header Actions: Reminders, Settings (beside Reminders), Profile, Logout */}
         <div className="header-actions">
-          {isAdmin && (
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={() => setActiveTab('admin')}
-              title="Admin PIN Reset Panel"
-              style={{
-                color: 'var(--accent-gold, #d97706)',
-                background: 'rgba(217, 119, 6, 0.15)',
-                borderColor: 'var(--accent-gold, #d97706)',
-                borderWidth: '1.5px',
-              }}
-            >
-              <ShieldCheck size={18} />
-            </button>
-          )}
-
           {/* Reminders Notification Button */}
           <button
             type="button"

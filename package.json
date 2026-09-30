@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd apps/web && npm install && npm run build && rm -rf ../../dist && mkdir -p ../../dist && cp -r dist/. ../../dist/"
+    "build": "cd apps/web && npm install && npm run build && rm -rf ../../dist && mkdir -p ../../dist && cp -r dist/. ../../dist/",
+    "sync:from-turso": "cd backend && .\\.venv\\Scripts\\python scripts/pull_from_turso.py",
+    "sync:to-turso": "cd backend && .\\.venv\\Scripts\\python scripts/migrate_to_turso.py"
   }
 }
