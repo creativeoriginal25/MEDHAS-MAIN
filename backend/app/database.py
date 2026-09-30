@@ -57,38 +57,14 @@ def _ensure_tmp_db(tmp_db: str):
 
 
 def get_database_url() -> tuple[str, dict]:
-    """Determine the active database URL.
-
-    1. If Turso credentials exist and libsql package is installed, connect to Turso Cloud directly.
-    2. Otherwise, if running on Vercel, copy bundled app.db to temp storage.
-    3. Otherwise, use local SQLite app.db.
-    """
-    turso_url = (settings.turso_database_url or os.environ.get("TURSO_DATABASE_URL") or "").strip()
-    turso_token = (settings.turso_auth_token or os.environ.get("TURSO_AUTH_TOKEN") or "").strip()
-
-    if turso_url and turso_token and len(turso_token) > 15:
-        try:
-            import libsql_experimental  # noqa: F401
-            import sqlalchemy_libsql  # noqa: F401
-            host = turso_url
-            if host.startswith("libsql://"):
-                host = host[len("libsql://"):]
-            elif host.startswith("https://"):
-                host = host[len("https://"):]
-            host = host.split("/")[0]
-            url = f"sqlite+libsql://{host}?authToken={turso_token}&secure=true"
-            logger.info(f"Connecting to Turso Cloud LibSQL directly: {host}")
-            return url, {}
-        except Exception as e:
-            logger.warning(f"Direct LibSQL connection unavailable ({e}), using SQLite storage")
-
+    """Determine the active database URL."""
     if IS_VERCEL:
         tmp_dir = tempfile.gettempdir()
         os.makedirs(tmp_dir, exist_ok=True)
         tmp_db = os.path.join(tmp_dir, "app.db")
         _ensure_tmp_db(tmp_db)
         url = f"sqlite:///{Path(tmp_db).as_posix()}"
-        logger.info(f"Vercel serverless: using SQLite at {tmp_db} (url: {url})")
+        logger.info(f"Vercel serverless: using SQLite at {tmp_db}")
         return url, {"check_same_thread": False}
 
     url = settings.database_url
