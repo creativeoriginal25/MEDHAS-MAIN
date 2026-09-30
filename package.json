@@ -1,0 +1,8 @@
+{
+  "name": "medhas-unified-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd apps/web && npm install && npm run build && rm -rf ../../dist && mkdir -p ../../dist && cp -r dist/. ../../dist/"
+  }
+}
