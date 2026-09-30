@@ -124,13 +124,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const fillDemo = (reg: string, demoPin: string) => {
-    setIsRegister(false);
-    setRegisterNumber(reg);
-    setPin(demoPin);
-    setError(null);
-  };
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -404,31 +397,6 @@ export const Login: React.FC = () => {
             {loading ? 'Verifying...' : isRegister ? 'Create Account & Access' : 'Access Attendance Ledger'}
           </button>
         </form>
-
-        {/* Demo Fast Login Pills */}
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--rule)' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--ink-soft)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', textAlign: 'center', marginBottom: '0.6rem' }}>
-            Quick Demo Accounts
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => fillDemo('22B91A0501', '1234')}
-            >
-              <User size={13} />
-              <span>Student (22B91A0501)</span>
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => fillDemo('ADMIN01', 'admin123')}
-            >
-              <ShieldCheck size={13} color="var(--accent-gold)" />
-              <span>Admin (ADMIN01)</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

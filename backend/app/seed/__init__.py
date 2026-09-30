@@ -251,15 +251,9 @@ PROMPT_TEMPLATES = [
      ])},
 ]
 
-# ===== DEMO USERS (development only) =====
-DEMO_USERS = [
-    {"register_number": "25B91A05D8", "pin": "1234", "display_name": "Demo Admin", "branch": "CSE", "section": "A",
-     "roles": ["student", "platform_admin", "attendance_admin", "content_editor"]},
-    {"register_number": "25B91A0501", "pin": "1234", "display_name": "Demo Student", "branch": "CSE", "section": "A",
-     "roles": ["student"]},
-    {"register_number": "22B91A0501", "pin": "1234", "display_name": "Demo Student 22", "branch": "CSE", "section": "A",
-     "roles": ["student"]},
-    {"register_number": "ADMIN01", "pin": "admin123", "display_name": "Platform Administrator", "branch": "CSE", "section": "A",
+# ===== INITIAL BOOTSTRAP ACCOUNTS =====
+BOOTSTRAP_USERS = [
+    {"register_number": "ADMIN01", "pin": "admin123", "display_name": "Administrator", "branch": "CSE", "section": "A",
      "roles": ["student", "platform_admin", "attendance_admin", "content_editor"]},
 ]
 
@@ -281,7 +275,7 @@ def seed_database():
         if db.query(Department).count() > 0:
             dept_map = {d.code: d.id for d in db.query(Department).all()}
             section_map = {(s.branch, s.section_label): s.id for s in db.query(Section).all()}
-            for u_data in DEMO_USERS:
+            for u_data in BOOTSTRAP_USERS:
                 existing = db.query(User).filter(User.register_number == u_data["register_number"]).first()
                 if not existing:
                     s_id = section_map.get((u_data["branch"], u_data["section"]))
@@ -410,8 +404,8 @@ def seed_database():
             db.add(CampusService(**cs))
         logger.info(f"  Seeded {len(CAMPUS_SERVICES)} campus services")
 
-        # 10. Demo users (DEV-ONLY)
-        for u_data in DEMO_USERS:
+        # 10. Initial bootstrap admin user
+        for u_data in BOOTSTRAP_USERS:
             section_id = section_map.get((u_data["branch"], u_data["section"]))
             dept_id = dept_map.get(u_data["branch"])
             user = User(
@@ -425,7 +419,7 @@ def seed_database():
             db.flush()
             for role in u_data["roles"]:
                 db.add(UserRole(user_id=user.id, role=role))
-        logger.info(f"  Seeded {len(DEMO_USERS)} demo users (DEV-ONLY)")
+        logger.info(f"  Initialized {len(BOOTSTRAP_USERS)} bootstrap accounts")
 
         db.commit()
         logger.info("Database seeding complete!")

@@ -63,7 +63,11 @@ def execute_turso_batch(pipeline_url: str, auth_token: str, statements: List[Dic
         "Content-Type": "application/json",
     }
 
-    requests = []
+    # Disable FK checks within this pipeline connection context
+    requests = [{
+        "type": "execute",
+        "stmt": {"sql": "PRAGMA foreign_keys=OFF", "args": []}
+    }]
     for stmt in statements:
         sql = stmt["sql"]
         args = [convert_val_to_turso_arg(a) for a in stmt.get("args", [])]
@@ -134,6 +138,10 @@ def sync_sqlite_to_turso(
 
     # Step 2: Upload Data table by table in batches of 40 rows
     logger.info("Step 2: Transferring table rows to Turso...")
+
+    # Disable foreign key checks during bulk import
+    execute_turso_batch(pipeline_url, turso_token, [{"sql": "PRAGMA foreign_keys=OFF", "args": []}])
+
     total_records = 0
 
     # Desired order for foreign keys
@@ -181,6 +189,9 @@ def sync_sqlite_to_turso(
 
         total_records += len(rows)
         logger.info(f"    ✓ {t_name} synchronized ({len(rows)} rows)")
+
+    # Re-enable foreign key checks
+    execute_turso_batch(pipeline_url, turso_token, [{"sql": "PRAGMA foreign_keys=ON", "args": []}])
 
     conn.close()
     logger.info("=" * 60)

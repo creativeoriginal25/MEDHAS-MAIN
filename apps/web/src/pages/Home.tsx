@@ -65,7 +65,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
 
         <div style={{ padding: '0.5rem 0 1rem' }}>
           <h2 className="font-serif" style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--ink)' }}>
-            Welcome, {user?.display_name || user?.register_number}
+            Welcome, {(user?.display_name && !user.display_name.toLowerCase().includes('demo') && !user.display_name.toLowerCase().includes('test')) ? user.display_name : (user?.register_number || 'Student')}
           </h2>
           <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', marginTop: '0.35rem', lineHeight: 1.5 }}>
             Section {user?.section_label || 'A'} ledger is active. Mark today's periods, verify your 75% baseline requirement, and explore syllabus roadmaps.

@@ -98,7 +98,7 @@ export const Profile: React.FC<ProfileProps> = ({ onOpenSettings }) => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h2 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--ink)' }}>
-                  {user.display_name || `Student ${user.register_number}`}
+                  {(user.display_name && !user.display_name.toLowerCase().includes('demo') && !user.display_name.toLowerCase().includes('test')) ? user.display_name : `Student (${user.register_number})`}
                 </h2>
                 <span className="badge badge-neutral mono-num" style={{ fontWeight: 700 }}>
                   {user.register_number}
