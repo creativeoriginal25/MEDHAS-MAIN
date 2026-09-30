@@ -18,6 +18,14 @@ for p in [CURRENT_DIR, ROOT_DIR, BACKEND_DIR]:
 os.environ.setdefault("VERCEL", "1")
 
 from app.main import app
+from app.database import ensure_database_ready
+
+# Ensure database is ready with tables and student accounts immediately on lambda init
+try:
+    ensure_database_ready()
+except Exception as e:
+    import logging
+    logging.getLogger("api").error(f"Error ensuring database ready on lambda start: {e}")
 
 try:
     from mangum import Mangum

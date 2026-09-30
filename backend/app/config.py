@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     initial_admin_register: str = "25B91A05D8"
 
     # Optional Turso
-    turso_database_url: Optional[str] = None
-    turso_auth_token: Optional[str] = None
+    turso_database_url: Optional[str] = os.environ.get("TURSO_DATABASE_URL", "libsql://medhas-nextgen-labs.aws-ap-south-1.turso.io")
+    turso_auth_token: Optional[str] = os.environ.get("TURSO_AUTH_TOKEN", "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTA3ODU5MDcsImlkIjoiMDFhMGYyZDgtZmYwMS03NjM1LTkyZDItZjVlY2JkZDRkMDE2Iiwia2lkIjoiSzBzc1VnOXhvRVJHZXZCSUhVZ3VxMGNuMzAwUXJoTnFHSDlPVnlzMUhJYyIsInJpZCI6IjMwMGU5ZDg1LTBlOGEtNGM1NS05M2U0LWE2MDJlZmYwNTFiYiJ9.tLzpk2nZ-17vCVGCsSWSAnAQNixKDct1Km3-V9qr5bxCdhsI1mAa5AVwsJTG-9nJbbzHaL6Hni2BgaLc3GlrCg")
 
     # CORS
     allowed_origins: str = ""

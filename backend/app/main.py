@@ -73,16 +73,15 @@ async def global_exception_handler(request, exc):
     )
 
 
-# Include all routers under /api prefix
-app.include_router(auth_router, prefix="/api")
-app.include_router(attendance_router, prefix="/api")
-app.include_router(content_router, prefix="/api")
-app.include_router(prompts_router, prefix="/api")
-app.include_router(campus_router, prefix="/api")
-app.include_router(admin_router, prefix="/api")
+# Include all routers under both /api prefix and root to support all Vercel routing modes
+routers = [auth_router, attendance_router, content_router, prompts_router, campus_router, admin_router]
+for r in routers:
+    app.include_router(r, prefix="/api")
+    app.include_router(r)
 
 
 @app.get("/api/health")
+@app.get("/health")
 def health_check():
     return {"status": "ok", "app": "College Platform Unified"}
 

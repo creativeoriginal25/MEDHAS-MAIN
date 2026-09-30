@@ -1,5 +1,8 @@
 import os
+import shutil
+import tempfile
 import logging
+from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
@@ -9,66 +12,88 @@ logger = logging.getLogger("database")
 IS_VERCEL = bool(os.environ.get("VERCEL"))
 
 
+def _ensure_tmp_db(tmp_db: str):
+    """Copy bundled app.db to temp storage if not already there or if invalid."""
+    os.makedirs(os.path.dirname(tmp_db), exist_ok=True)
+
+    if os.path.exists(tmp_db) and os.path.getsize(tmp_db) > 10000:
+        return
+
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "..", "app.db"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "backend", "app.db"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "api", "app.db"),
+        "/var/task/backend/app.db",
+        "/var/task/api/app.db",
+        "/var/task/app.db",
+        os.path.join(os.getcwd(), "backend", "app.db"),
+        os.path.join(os.getcwd(), "api", "app.db"),
+        os.path.join(os.getcwd(), "app.db"),
+    ]
+    for candidate in candidates:
+        candidate = os.path.normpath(candidate)
+        if os.path.exists(candidate) and os.path.getsize(candidate) > 10000:
+            try:
+                shutil.copyfile(candidate, tmp_db)
+                logger.info(f"Copied app.db from {candidate} to {tmp_db} ({os.path.getsize(tmp_db)} bytes)")
+                return
+            except Exception as e:
+                logger.warning(f"Could not copy app.db from {candidate}: {e}")
+
+    # Recursive search in /var/task if running on AWS Lambda / Vercel
+    if os.path.exists("/var/task"):
+        for root, _, files in os.walk("/var/task"):
+            if "app.db" in files:
+                p = os.path.join(root, "app.db")
+                if os.path.getsize(p) > 10000:
+                    try:
+                        shutil.copyfile(p, tmp_db)
+                        logger.info(f"Copied app.db from tree search {p} to {tmp_db}")
+                        return
+                    except Exception:
+                        pass
+
+    logger.warning("No valid bundled app.db found on disk, will initialize fresh tables.")
+
+
 def get_database_url() -> tuple[str, dict]:
     """Determine the active database URL.
 
-    On Vercel: always use /tmp/app.db (SQLite), bundled app.db is copied there.
-    Locally with Turso creds: use sqlite+libsql dialect.
-    Locally without creds: use settings.database_url.
+    1. If Turso credentials exist and libsql package is installed, connect to Turso Cloud directly.
+    2. Otherwise, if running on Vercel, copy bundled app.db to temp storage.
+    3. Otherwise, use local SQLite app.db.
     """
+    turso_url = (settings.turso_database_url or os.environ.get("TURSO_DATABASE_URL") or "").strip()
+    turso_token = (settings.turso_auth_token or os.environ.get("TURSO_AUTH_TOKEN") or "").strip()
+
+    if turso_url and turso_token and len(turso_token) > 15:
+        try:
+            import libsql_experimental  # noqa: F401
+            import sqlalchemy_libsql  # noqa: F401
+            host = turso_url
+            if host.startswith("libsql://"):
+                host = host[len("libsql://"):]
+            elif host.startswith("https://"):
+                host = host[len("https://"):]
+            host = host.split("/")[0]
+            url = f"sqlite+libsql://{host}?authToken={turso_token}&secure=true"
+            logger.info(f"Connecting to Turso Cloud LibSQL directly: {host}")
+            return url, {}
+        except Exception as e:
+            logger.warning(f"Direct LibSQL connection unavailable ({e}), using SQLite storage")
 
     if IS_VERCEL:
-        # On Vercel serverless: use /tmp SQLite (ephemeral but works for reads)
-        tmp_db = "/tmp/app.db"
+        tmp_dir = tempfile.gettempdir()
+        os.makedirs(tmp_dir, exist_ok=True)
+        tmp_db = os.path.join(tmp_dir, "app.db")
         _ensure_tmp_db(tmp_db)
-        url = f"sqlite:///{tmp_db}"
-        logger.info(f"Vercel serverless: using SQLite at {tmp_db}")
+        url = f"sqlite:///{Path(tmp_db).as_posix()}"
+        logger.info(f"Vercel serverless: using SQLite at {tmp_db} (url: {url})")
         return url, {"check_same_thread": False}
 
-    # Local dev: try Turso libsql if creds are present
-    if settings.turso_database_url and settings.turso_auth_token and len(settings.turso_auth_token) > 15:
-        try:
-            import libsql_experimental  # noqa: F401 - check if available
-            turso_raw = settings.turso_database_url.strip()
-            if turso_raw.startswith("libsql://"):
-                host = turso_raw[len("libsql://"):]
-            elif turso_raw.startswith("https://"):
-                host = turso_raw[len("https://"):]
-            else:
-                host = turso_raw
-            host = host.split("/")[0]
-            url = f"sqlite+libsql://{host}?authToken={settings.turso_auth_token}&secure=true"
-            logger.info(f"Connecting to Turso Cloud LibSQL: {host}")
-            return url, {}
-        except ImportError:
-            logger.warning("libsql_experimental not available, falling back to local SQLite")
-
-    # Local SQLite fallback
     url = settings.database_url
     logger.info(f"Using local SQLite: {url}")
     return url, {"check_same_thread": False}
-
-
-def _ensure_tmp_db(tmp_db: str):
-    """Copy bundled app.db to /tmp if not already there."""
-    if not os.path.exists(tmp_db):
-        try:
-            import shutil
-            # Look for app.db relative to this file (backend/app/database.py -> backend/app.db)
-            candidates = [
-                os.path.join(os.path.dirname(__file__), "..", "app.db"),
-                os.path.join(os.path.dirname(__file__), "..", "..", "backend", "app.db"),
-                "/var/task/backend/app.db",
-            ]
-            for candidate in candidates:
-                candidate = os.path.normpath(candidate)
-                if os.path.exists(candidate):
-                    shutil.copyfile(candidate, tmp_db)
-                    logger.info(f"Copied app.db from {candidate} to {tmp_db}")
-                    return
-            logger.warning("No bundled app.db found, starting with empty database")
-        except Exception as e:
-            logger.warning(f"Could not copy app.db: {e}")
 
 
 active_url, connect_args = get_database_url()
@@ -111,3 +136,21 @@ def get_db():
 def create_all_tables():
     """Create all tables — used for initial setup and testing."""
     Base.metadata.create_all(bind=engine)
+
+
+def ensure_database_ready():
+    """Self-healing setup: ensures tables exist and seed data is populated if empty."""
+    try:
+        create_all_tables()
+        db = SessionLocal()
+        from app.models.user import User
+        count = db.query(User).count()
+        db.close()
+        if count == 0:
+            logger.warning("Database has 0 users, auto-running seed...")
+            from app.seed import seed_database
+            seed_database()
+        else:
+            logger.info(f"Database ready with {count} registered users.")
+    except Exception as e:
+        logger.error(f"Error ensuring database ready: {e}", exc_info=True)
