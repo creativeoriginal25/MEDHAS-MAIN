@@ -41,6 +41,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Profile State
   const [sections, setSections] = useState<any[]>([]);
   const [selectedSectionId, setSelectedSectionId] = useState<number>(user?.section_id || 1);
+  const [academicYear, setAcademicYear] = useState<number>(user?.academic_year || 2);
+  const [semester, setSemester] = useState<number>(user?.current_semester || 3);
   const [attended, setAttended] = useState<number | string>(user?.baseline_attended || 0);
   const [total, setTotal] = useState<number | string>(user?.baseline_total || 0);
   const [bDate, setBDate] = useState<string>(user?.baseline_date || '2026-08-24');
@@ -88,21 +90,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Load sections on open
+  // Load sections and sync user details on open
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
       setMsg('');
       setError('');
+      if (user) {
+        setSelectedSectionId(user.section_id || 1);
+        setAcademicYear(user.academic_year || 2);
+        setSemester(user.current_semester || 3);
+        setAttended(user.baseline_attended || 0);
+        setTotal(user.baseline_total || 0);
+        setBDate(user.baseline_date || '2026-08-24');
+      }
       attendanceApi.getSections().then((res) => {
         if (res.sections) setSections(res.sections);
       }).catch(console.error);
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, user]);
 
   if (!isOpen) return null;
 
   // --- Handlers ---
+  const handleYearChange = (newYear: number) => {
+    setAcademicYear(newYear);
+    // If current semester is outside the chosen year, adapt default to odd semester
+    const minSem = (newYear - 1) * 2 + 1;
+    const maxSem = newYear * 2;
+    if (semester < minSem || semester > maxSem) {
+      setSemester(minSem);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg('');
@@ -122,11 +142,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         baseline_total: bTot,
         baseline_date: bTot > 0 ? bDate : null,
         section_id: selectedSectionId,
+        academic_year: academicYear,
+        current_semester: semester,
       });
       if (res.user) {
         await refreshUser();
       }
-      setMsg('Profile, Section & Baseline updated successfully!');
+      setMsg('Profile, Academic Year, Semester & Section updated successfully!');
       setTimeout(() => setMsg(''), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to update profile settings.');
@@ -484,6 +506,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </>
                 )}
               </select>
+            </div>
+
+            {/* Editable Academic Year & Semester (Below Timetable Section) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-field">
+                <label className="form-label">Academic Year</label>
+                <select
+                  className="form-control mono"
+                  value={academicYear}
+                  onChange={(e) => handleYearChange(parseInt(e.target.value) || 1)}
+                >
+                  <option value={1}>1st Year (B.Tech)</option>
+                  <option value={2}>2nd Year (B.Tech)</option>
+                  <option value={3}>3rd Year (B.Tech)</option>
+                  <option value={4}>4th Year (B.Tech)</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label className="form-label">Current Semester</label>
+                <select
+                  className="form-control mono"
+                  value={semester}
+                  onChange={(e) => setSemester(parseInt(e.target.value) || 1)}
+                >
+                  <option value={1}>Semester 1 (1-1)</option>
+                  <option value={2}>Semester 2 (1-2)</option>
+                  <option value={3}>Semester 3 (2-1)</option>
+                  <option value={4}>Semester 4 (2-2)</option>
+                  <option value={5}>Semester 5 (3-1)</option>
+                  <option value={6}>Semester 6 (3-2)</option>
+                  <option value={7}>Semester 7 (4-1)</option>
+                  <option value={8}>Semester 8 (4-2)</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

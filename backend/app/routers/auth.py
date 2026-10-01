@@ -229,15 +229,22 @@ def update_baseline(
         user.baseline_date = payload["baseline_date"]
     if "section_id" in payload and payload["section_id"]:
         user.section_id = int(payload["section_id"])
+    if "academic_year" in payload and payload["academic_year"]:
+        user.academic_year = int(payload["academic_year"])
+    if "current_semester" in payload and payload["current_semester"]:
+        user.current_semester = int(payload["current_semester"])
+    elif "semester" in payload and payload["semester"]:
+        user.current_semester = int(payload["semester"])
 
     db.add(AuditLog(
         user_id=user.id,
         register_number=user.register_number,
         action="UPDATE_BASELINE",
-        details=f"Updated baseline: {user.baseline_attended}/{user.baseline_total}, section: {user.section_id}",
+        details=f"Updated profile: {user.baseline_attended}/{user.baseline_total}, section: {user.section_id}, year: {user.academic_year}, sem: {user.current_semester}",
     ))
     db.commit()
-    return {"message": "Baseline updated successfully", "user": _user_to_dict(user, db)}
+    db.refresh(user)
+    return {"message": "Profile updated successfully", "user": _user_to_dict(user, db)}
 
 
 @router.post("/delete-account")

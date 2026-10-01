@@ -80,7 +80,7 @@ export const authApi = {
   getMe: () => api.get<any>('/auth/me'),
   changePin: (current_pin: string, new_pin: string) =>
     api.post<{ message: string }>('/auth/change-pin', { current_pin, new_pin }),
-  updateBaseline: (payload: { baseline_attended?: number; baseline_total?: number; baseline_date?: string | null; section_id?: number }) =>
+  updateBaseline: (payload: { baseline_attended?: number; baseline_total?: number; baseline_date?: string | null; section_id?: number; academic_year?: number; current_semester?: number }) =>
     api.post<{ message: string; user: any }>('/auth/baseline', payload),
   deleteAccount: (pin: string) =>
     api.post<{ message: string }>('/auth/delete-account', { pin }),

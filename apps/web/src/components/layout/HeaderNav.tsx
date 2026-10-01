@@ -48,7 +48,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           <div>
             <div className="brand-heading font-serif">MEDHAS</div>
             <div className="brand-subline">
-              {user ? `${user.branch || 'CSE'} — Sec ${user.section_label || 'A'} · ${user.register_number}` : 'SRKR Engineering College'}
+              {user ? `${user.branch || 'CSE'} · Y${user.academic_year || 2} · Sec ${user.section_label || 'A'} · ${user.register_number}` : 'SRKR Engineering College'}
             </div>
           </div>
         </div>

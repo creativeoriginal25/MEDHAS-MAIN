@@ -107,7 +107,7 @@ export const Profile: React.FC<ProfileProps> = ({ onOpenSettings, onOpenAdmin })
                 </span>
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', marginTop: '0.2rem', fontFamily: 'var(--font-mono)' }}>
-                SRKR Engineering College · {user.branch || 'CSE'} Department · Section {user.section_label || 'A'}
+                SRKR Engineering College · {user.branch || 'CSE'} Department · Year {user.academic_year || 2} · Section {user.section_label || 'A'}
               </div>
             </div>
           </div>
