@@ -19,6 +19,13 @@ os.environ.setdefault("VERCEL", "1")
 from app.main import app
 from app.database import ensure_database_ready
 
+# Ensure tables exist on serverless cold start
+try:
+    from app.database import create_all_tables
+    create_all_tables()
+except Exception:
+    pass
+
 try:
     ensure_database_ready()
 except Exception as e:

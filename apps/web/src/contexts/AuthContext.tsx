@@ -32,9 +32,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const freshUser = await authApi.getMe();
           setUser(freshUser);
           localStorage.setItem('user', JSON.stringify(freshUser));
-        } catch {
-          // Token invalid or network issue
-          logout();
+        } catch (err: any) {
+          // Only clear session if server explicitly returns 401 Unauthorized
+          // Preserve session during serverless cold starts or transient network blips
+          if (err?.status === 401) {
+            logout();
+          } else {
+            console.warn('Profile sync deferred (cold-start or network latency):', err);
+          }
         }
       }
       setIsLoading(false);

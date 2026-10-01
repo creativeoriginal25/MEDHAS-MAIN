@@ -14,7 +14,7 @@ import { Admin } from './pages/Admin';
 
 const MainLayout: React.FC = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>('attendance');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'profile' | 'reminders' | 'security' | 'privacy' | 'server' | 'about'>('profile');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { attendanceApi } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -7,12 +7,7 @@ import {
   Coffee, 
   ChevronLeft, 
   ChevronRight, 
-  CheckCheck, 
-  Lock, 
   RotateCcw, 
-  FileText,
-  CalendarCheck,
-  RefreshCw
 } from 'lucide-react';
 
 interface BlockItem {
@@ -20,11 +15,21 @@ interface BlockItem {
   order_index: number;
   subject: string;
   periods: number;
+  status?: string;
+  notes?: string;
+}
+
+function getTodayIST(): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  } catch {
+    return new Date().toISOString().split('T')[0];
+  }
 }
 
 export const TodayTab: React.FC = () => {
   const { user } = useAuth();
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => getTodayIST(), []);
   const [currentDate, setCurrentDate] = useState<string>(todayStr);
   const [blocks, setBlocks] = useState<BlockItem[]>([]);
   const [dailyLogs, setDailyLogs] = useState<Record<string, any[]>>({});
@@ -36,17 +41,9 @@ export const TodayTab: React.FC = () => {
   const [dayRemarks, setDayRemarks] = useState('');
   const [showRemarkInput, setShowRemarkInput] = useState(false);
 
-  // Edit window
-  const minDateObj = new Date();
-  minDateObj.setDate(minDateObj.getDate() - 7);
-  const minDateStr = minDateObj.toISOString().split('T')[0];
-
-  const maxDateObj = new Date();
-  maxDateObj.setDate(maxDateObj.getDate() + 7);
-  const maxDateStr = maxDateObj.toISOString().split('T')[0];
-
+  // Edit window: Allow editing within 14 days and after baseline date
   const isCoveredByBaseline = Boolean(user?.baseline_date && currentDate <= user.baseline_date);
-  const isDateEditable = currentDate >= minDateStr && currentDate <= maxDateStr && !isCoveredByBaseline;
+  const isDateEditable = !isCoveredByBaseline;
 
   useEffect(() => {
     loadTimetableAndLogs();
@@ -60,26 +57,51 @@ export const TodayTab: React.FC = () => {
         attendanceApi.getLogs(),
         attendanceApi.getDashboard(),
       ]);
+
       if (ttData.status === 'fulfilled') {
-        setBlocks(ttData.value?.blocks?.map((b: any) => ({
+        const rawBlocks = ttData.value?.blocks || [];
+        const mapped = rawBlocks.map((b: any) => ({
           id: b.block_id,
           order_index: b.order_index,
           subject: b.subject,
           periods: b.periods,
-        })) || []);
+          status: b.status,
+          notes: b.notes,
+        }));
+        setBlocks(mapped);
+
+        // Seed current day logs directly from date response
+        const fromDateEntries = rawBlocks
+          .filter((b: any) => b.status && b.status !== 'unmarked')
+          .map((b: any) => ({
+            block_id: b.block_id,
+            status: b.status,
+            notes: b.notes,
+          }));
+
+        setDailyLogs(prev => ({
+          ...prev,
+          [currentDate]: fromDateEntries,
+        }));
       }
+
       if (logsData.status === 'fulfilled' && logsData.value?.logs_by_date) {
-        setDailyLogs(logsData.value.logs_by_date);
+        setDailyLogs(prev => ({
+          ...logsData.value.logs_by_date,
+          // Keep current date entries from getDate if present
+          [currentDate]: prev[currentDate] || logsData.value.logs_by_date[currentDate] || [],
+        }));
         const entries = logsData.value.logs_by_date[currentDate] || [];
         const existingNote = entries.find((e: any) => e.notes)?.notes || '';
         setDayRemarks(existingNote);
         setShowRemarkInput(Boolean(existingNote));
       }
+
       if (dashData.status === 'fulfilled') {
         setSummary(dashData.value);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error loading attendance data:', err);
     } finally {
       setLoading(false);
     }
@@ -87,18 +109,19 @@ export const TodayTab: React.FC = () => {
 
   const getWeekDays = () => {
     const days = [];
-    for (let i = -2; i <= 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      const iso = d.toISOString().split('T')[0];
+    // Anchor to today in IST
+    const [y, m, d] = todayStr.split('-').map(Number);
+    for (let i = -2; i <= 6; i++) {
+      const target = new Date(y, m - 1, d + i);
+      const iso = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const isPastBaseline = Boolean(user?.baseline_date && iso <= user.baseline_date);
       days.push({
         dateStr: iso,
-        dayName: dayNames[d.getDay()],
-        dayNum: d.getDate(),
+        dayName: dayNames[target.getDay()],
+        dayNum: target.getDate(),
         isToday: iso === todayStr,
-        isSunday: d.getDay() === 0,
+        isSunday: target.getDay() === 0,
         isPastBaseline,
         hasLogs: Boolean(dailyLogs[iso]?.length),
       });
@@ -107,27 +130,31 @@ export const TodayTab: React.FC = () => {
   };
 
   const shiftDate = (offset: number) => {
-    const cur = new Date(currentDate);
-    cur.setDate(cur.getDate() + offset);
-    setCurrentDate(cur.toISOString().split('T')[0]);
+    const [y, m, d] = currentDate.split('-').map(Number);
+    const target = new Date(y, m - 1, d + offset);
+    const iso = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+    setCurrentDate(iso);
     setFeedback('');
     setUndoAction(null);
   };
 
-  const getBlockStatus = (blockId: number) => {
-    const entries = dailyLogs[currentDate] || [];
-    const match = entries.find((e: any) => e.block_id === blockId);
-    return match ? match.status : null;
+  const getBlockStatus = (blockId: number): string | null => {
+    const entries = dailyLogs[currentDate];
+    if (entries !== undefined) {
+      const match = entries.find((e: any) => e.block_id === blockId);
+      return match ? match.status : null;
+    }
+    const b = blocks.find(b => b.id === blockId);
+    return (b?.status && b.status !== 'unmarked') ? b.status : null;
   };
 
   const calculateImpact = (block: BlockItem) => {
-    const totAttended = summary?.overall_attended ?? user?.baseline_attended ?? 0;
-    const totTotal = summary?.overall_total ?? user?.baseline_total ?? 0;
+    const totAttended = summary?.total_attended ?? summary?.overall?.attended ?? user?.baseline_attended ?? 0;
+    const totTotal = summary?.total_periods ?? summary?.overall?.total ?? user?.baseline_total ?? 0;
     const currentPct = totTotal > 0 ? (totAttended / totTotal) * 100 : 0;
     const k = block.periods || 1;
     const curStatus = getBlockStatus(block.id);
 
-    // Calculate baseline without current status of this specific block if marked
     let baseAtt = totAttended;
     let baseTot = totTotal;
     if (curStatus === 'present') {
@@ -137,13 +164,11 @@ export const TodayTab: React.FC = () => {
       baseTot = Math.max(0, totTotal - k);
     }
 
-    // Impact if marked present
     const newAttPres = baseAtt + k;
     const newTotPres = baseTot + k;
     const pctIfPres = newTotPres > 0 ? (newAttPres / newTotPres) * 100 : 100;
     const deltaPres = pctIfPres - currentPct;
 
-    // Impact if marked absent
     const newAttAbs = baseAtt;
     const newTotAbs = baseTot + k;
     const pctIfAbs = newTotAbs > 0 ? (newAttAbs / newTotAbs) * 100 : 0;
@@ -166,11 +191,11 @@ export const TodayTab: React.FC = () => {
     const currentStatus = getBlockStatus(blockId);
     const targetStatus = (currentStatus === clickedStatus) ? 'unmarked' : clickedStatus;
 
-    // Cache previous for undo
+    // Cache previous entries for undo
     const prevEntries = dailyLogs[currentDate] ? [...dailyLogs[currentDate]] : [];
     setUndoAction({ date: currentDate, entries: prevEntries });
 
-    // 0ms Optimistic UI update
+    // Immediate 0ms Optimistic UI update
     const currentEntries = [...prevEntries];
     const idx = currentEntries.findIndex((e: any) => e.block_id === blockId);
     if (targetStatus === 'unmarked') {
@@ -183,21 +208,31 @@ export const TodayTab: React.FC = () => {
       }
     }
 
+    // Update state immediately
     setDailyLogs(prev => ({ ...prev, [currentDate]: currentEntries }));
-    setFeedback(targetStatus === 'unmarked' ? 'Unmarked' : `Saved ${targetStatus.toUpperCase()}`);
-    setTimeout(() => setFeedback(''), 2000);
+    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, status: targetStatus } : b));
+    setFeedback(targetStatus === 'unmarked' ? 'Unmarked' : `Marked ${targetStatus.toUpperCase()}`);
+    setTimeout(() => setFeedback(''), 2200);
 
-    // Sync to backend
+    // Sync to backend API
     setSaving(true);
     try {
-      await attendanceApi.markAttendance(currentDate, [{
+      const res = await attendanceApi.markAttendance(currentDate, [{
         block_id: blockId,
         status: targetStatus,
         notes: dayRemarks || undefined,
       }]);
+      if (res?.summary) {
+        setSummary(res.summary);
+      }
     } catch (err: any) {
-      // Revert on error
+      console.error('Save failed:', err);
+      // Revert optimistic update only on actual network error
       setDailyLogs(prev => ({ ...prev, [currentDate]: prevEntries }));
+      setBlocks(prev => prev.map(b => {
+        const pe = prevEntries.find((e: any) => e.block_id === b.id);
+        return { ...b, status: pe ? pe.status : 'unmarked' };
+      }));
       setFeedback('Error saving attendance');
     } finally {
       setSaving(false);
@@ -217,14 +252,23 @@ export const TodayTab: React.FC = () => {
     }));
 
     setDailyLogs(prev => ({ ...prev, [currentDate]: newEntries }));
+    setBlocks(prev => prev.map(b => ({ ...b, status })));
     setFeedback(`Marked All ${status.toUpperCase()}`);
-    setTimeout(() => setFeedback(''), 2000);
+    setTimeout(() => setFeedback(''), 2200);
 
     setSaving(true);
     try {
-      await attendanceApi.markAttendance(currentDate, newEntries);
+      const res = await attendanceApi.markAttendance(currentDate, newEntries);
+      if (res?.summary) {
+        setSummary(res.summary);
+      }
     } catch (err: any) {
+      console.error('Batch save failed:', err);
       setDailyLogs(prev => ({ ...prev, [currentDate]: prevEntries }));
+      setBlocks(prev => prev.map(b => {
+        const pe = prevEntries.find((e: any) => e.block_id === b.id);
+        return { ...b, status: pe ? pe.status : 'unmarked' };
+      }));
       setFeedback('Error saving batch status');
     } finally {
       setSaving(false);
@@ -235,6 +279,10 @@ export const TodayTab: React.FC = () => {
     if (!undoAction) return;
     const { date, entries } = undoAction;
     setDailyLogs(prev => ({ ...prev, [date]: entries }));
+    setBlocks(prev => prev.map(b => {
+      const pe = entries.find((e: any) => e.block_id === b.id);
+      return { ...b, status: pe ? pe.status : 'unmarked' };
+    }));
     setUndoAction(null);
     setFeedback('Reverted action');
     setTimeout(() => setFeedback(''), 2000);
@@ -246,7 +294,8 @@ export const TodayTab: React.FC = () => {
     }
   };
 
-  const curD = new Date(currentDate);
+  const [y, m, d] = currentDate.split('-').map(Number);
+  const curD = new Date(y, m - 1, d);
   const formattedHeaderDate = curD.toLocaleDateString('en-IN', {
     weekday: 'long',
     month: 'short',
@@ -328,15 +377,15 @@ export const TodayTab: React.FC = () => {
             flexWrap: 'wrap',
             gap: '0.4rem',
           }}>
-            <div style={{ display: 'flex', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleMarkAll('present')}
                 disabled={saving}
-                style={{ fontSize: '0.72rem', padding: '0.28rem 0.55rem', color: 'var(--good)' }}
+                style={{ fontSize: '0.75rem', padding: '0.32rem 0.65rem', color: '#16a34a', fontWeight: 700 }}
               >
-                <Check size={13} />
+                <Check size={14} strokeWidth={2.5} />
                 <span>All Present</span>
               </button>
 
@@ -345,9 +394,9 @@ export const TodayTab: React.FC = () => {
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleMarkAll('absent')}
                 disabled={saving}
-                style={{ fontSize: '0.72rem', padding: '0.28rem 0.55rem', color: 'var(--bad)' }}
+                style={{ fontSize: '0.75rem', padding: '0.32rem 0.65rem', color: '#dc2626', fontWeight: 700 }}
               >
-                <X size={13} />
+                <X size={14} strokeWidth={2.5} />
                 <span>All Absent</span>
               </button>
 
@@ -356,9 +405,9 @@ export const TodayTab: React.FC = () => {
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleMarkAll('holiday')}
                 disabled={saving}
-                style={{ fontSize: '0.72rem', padding: '0.28rem 0.55rem', color: 'var(--accent-gold)' }}
+                style={{ fontSize: '0.75rem', padding: '0.32rem 0.65rem', color: '#d97706', fontWeight: 700 }}
               >
-                <Coffee size={13} />
+                <Coffee size={14} />
                 <span>Holiday</span>
               </button>
             </div>
@@ -376,7 +425,7 @@ export const TodayTab: React.FC = () => {
                 </button>
               )}
               {feedback && (
-                <span className="mono-num" style={{ fontSize: '0.75rem', color: 'var(--good)', fontWeight: 600 }}>
+                <span className="mono-num" style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700 }}>
                   {feedback}
                 </span>
               )}
@@ -408,7 +457,7 @@ export const TodayTab: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           {blocks.map((block) => {
             const status = getBlockStatus(block.id);
             const isPresent = status === 'present';
@@ -419,58 +468,60 @@ export const TodayTab: React.FC = () => {
             return (
               <div key={block.id} className="period-ledger-block">
                 <div className="block-title-box">
-                  <div className="block-index-badge mono-num">
-                    P{block.order_index + 1}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div className="block-name font-serif" style={{ fontSize: '0.98rem', fontWeight: 700 }}>
-                      {block.subject}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1 }}>
+                    <div className="block-index-badge mono-num">
+                      P{block.order_index + 1}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
-                      <span className="block-weight">
-                        {block.periods >= 4 ? '4 Periods (Lab)' : `${block.periods} Period${block.periods > 1 ? 's' : ''}`}
-                      </span>
-                      {isHoliday && (
-                        <span className="badge badge-neutral" style={{ fontSize: '0.68rem', color: 'var(--accent-gold)' }}>
-                          Batch Holiday
+                    <div>
+                      <div className="block-name font-serif" style={{ fontSize: '1.05rem', fontWeight: 800 }}>
+                        {block.subject}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.1rem' }}>
+                        <span className="block-weight">
+                          {block.periods >= 4 ? '4 Periods (Lab)' : `${block.periods} Period${block.periods > 1 ? 's' : ''}`}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Live Percentage Impact Badge Strip */}
-                    <div className="impact-delta-strip">
-                      <span className="impact-badge present" title={`Attending this class projects overall attendance to ${impact.pctIfPresent}%`}>
-                        <Check size={11} /> If Present: <strong>{impact.pctIfPresent}%</strong> ({impact.deltaPres})
-                      </span>
-                      <span className="impact-badge absent" title={`Missing this class projects overall attendance to ${impact.pctIfAbsent}%`}>
-                        <X size={11} /> If Absent: <strong>{impact.pctIfAbsent}%</strong> ({impact.deltaAbs})
-                      </span>
+                        {isHoliday && (
+                          <span className="badge badge-neutral" style={{ fontSize: '0.68rem', color: '#d97706', fontWeight: 700 }}>
+                            Batch Holiday
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 2-State Full-Text Toggle Buttons with Smooth Animated Transitions */}
+                {/* Percentage Impact Strip */}
+                <div className="impact-delta-strip">
+                  <span className="impact-badge present" title={`Attending this class projects overall attendance to ${impact.pctIfPresent}%`}>
+                    <Check size={11} strokeWidth={2.5} /> If Present: <strong>{impact.pctIfPresent}%</strong> ({impact.deltaPres})
+                  </span>
+                  <span className="impact-badge absent" title={`Missing this class projects overall attendance to ${impact.pctIfAbsent}%`}>
+                    <X size={11} strokeWidth={2.5} /> If Absent: <strong>{impact.pctIfAbsent}%</strong> ({impact.deltaAbs})
+                  </span>
+                </div>
+
+                {/* Full-width, Mobile-optimized PRESENT / ABSENT Buttons */}
                 <div className="status-pill-group">
                   <button
                     type="button"
-                    className={`status-pill-btn ${isPresent ? 'active-present' : ''}`}
+                    className={`status-pill-btn btn-present ${isPresent ? 'active-present' : ''}`}
                     onClick={() => handleSetBlockStatus(block.id, 'present')}
                     disabled={!isDateEditable}
                     title="Mark Present"
                   >
-                    <Check size={13} />
-                    <span>Present</span>
+                    <Check size={16} strokeWidth={3} />
+                    <span>PRESENT</span>
                   </button>
 
                   <button
                     type="button"
-                    className={`status-pill-btn ${isAbsent ? 'active-absent' : ''}`}
+                    className={`status-pill-btn btn-absent ${isAbsent ? 'active-absent' : ''}`}
                     onClick={() => handleSetBlockStatus(block.id, 'absent')}
                     disabled={!isDateEditable}
                     title="Mark Absent"
                   >
-                    <X size={13} />
-                    <span>Absent</span>
+                    <X size={16} strokeWidth={3} />
+                    <span>ABSENT</span>
                   </button>
                 </div>
               </div>

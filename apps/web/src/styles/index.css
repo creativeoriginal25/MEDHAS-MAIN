@@ -491,13 +491,13 @@ h1, h2, h3, h4, .heading-ledger {
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: var(--radius-md);
-  padding: 0.85rem;
-  margin-bottom: 0.65rem;
+  padding: 0.95rem 1.05rem;
+  margin-bottom: 0.75rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.65rem;
   transition: all 0.15s ease;
+  box-shadow: 0 1px 4px rgba(36, 27, 78, 0.04);
 }
 
 .period-ledger-block:hover {
@@ -507,115 +507,162 @@ h1, h2, h3, h4, .heading-ledger {
 .block-title-box {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .block-index-badge {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
   background: var(--surface-alt);
   color: var(--ink);
-  padding: 0.25rem 0.45rem;
+  padding: 0.28rem 0.55rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--rule);
 }
 
 .block-name {
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: var(--ink);
+  letter-spacing: -0.01em;
 }
 
 .block-weight {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--ink-soft);
+  font-weight: 600;
 }
 
-/* 2-State Toggle Pill (Present | Absent) with Smooth Animated Transitions */
+/* 2-State Full-Width Toggle Buttons (PRESENT | ABSENT) */
 .status-pill-group {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   background: var(--surface-alt);
   border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  padding: 3px;
-  gap: 3px;
-  position: relative;
+  border-radius: var(--radius-md);
+  padding: 5px;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .status-pill-btn {
-  border: none;
-  background: transparent;
-  padding: 0.38rem 0.85rem;
-  font-size: 0.76rem;
-  font-weight: 700;
+  border: 1.5px solid var(--rule);
+  background: var(--surface);
+  padding: 0.65rem 0.5rem;
+  min-height: 48px;
+  font-size: 0.9rem;
+  font-weight: 800;
   font-family: var(--font-sans);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.04em;
   color: var(--ink-soft);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  justify-content: center;
+  gap: 0.45rem;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  box-sizing: border-box;
 }
 
-.status-pill-btn:hover:not(:disabled) {
-  color: var(--ink);
-  background: rgba(36, 27, 78, 0.05);
+.status-pill-btn.btn-present:not(.active-present) {
+  background: rgba(22, 163, 74, 0.05);
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.status-pill-btn.btn-present:not(.active-present):hover {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: #16a34a;
+}
+
+.status-pill-btn.btn-absent:not(.active-absent) {
+  background: rgba(220, 38, 38, 0.05);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.status-pill-btn.btn-absent:not(.active-absent):hover {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: #dc2626;
+}
+
+.status-pill-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .status-pill-btn.active-present {
-  background: var(--good);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(45, 122, 58, 0.25);
-  transform: translateY(-0.5px);
+  background: #16a34a !important; /* Vivid Emerald Green */
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4) !important;
+  border: 1.5px solid #15803d !important;
+}
+
+.status-pill-btn.active-present svg {
+  stroke-width: 3px !important;
+  stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
 }
 
 .status-pill-btn.active-absent {
-  background: var(--bad);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(184, 51, 42, 0.25);
-  transform: translateY(-0.5px);
+  background: #dc2626 !important; /* Vivid Crimson Red */
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4) !important;
+  border: 1.5px solid #b91c1c !important;
+}
+
+.status-pill-btn.active-absent svg {
+  stroke-width: 3px !important;
+  stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
 }
 
 .status-pill-btn.active-holiday {
-  background: var(--accent-gold);
-  color: var(--ink);
+  background: #d97706 !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid #b45309 !important;
 }
 
 /* Impact Calculation Pill Strip */
 .impact-delta-strip {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-  font-size: 0.72rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  width: 100%;
+  font-size: 0.74rem;
   font-family: var(--font-mono);
-  flex-wrap: wrap;
 }
 
 .impact-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 3px;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.32rem 0.55rem;
+  border-radius: var(--radius-sm);
   font-weight: 600;
+  text-align: center;
 }
 
 .impact-badge.present {
-  background: rgba(45, 122, 58, 0.12);
-  color: var(--good);
-  border: 1px solid rgba(45, 122, 58, 0.25);
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.25);
 }
 
 .impact-badge.absent {
-  background: rgba(184, 51, 42, 0.12);
-  color: var(--bad);
-  border: 1px solid rgba(184, 51, 42, 0.25);
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.25);
 }
 
 /* Subject Progress Bar */
@@ -787,17 +834,26 @@ h1, h2, h3, h4, .heading-ledger {
   padding: 3px;
   gap: 4px;
   margin-bottom: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.forecast-view-switch::-webkit-scrollbar {
+  display: none;
 }
 
 .forecast-view-btn {
   flex: 1;
+  min-width: fit-content;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-sans);
   color: var(--ink-soft);
   background: transparent;
@@ -903,7 +959,8 @@ h1, h2, h3, h4, .heading-ledger {
 @media (max-width: 767px) {
   .app-viewport {
     width: 100%;
-    max-width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
     margin: 0;
     border-left: none;
     border-right: none;

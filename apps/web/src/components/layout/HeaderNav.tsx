@@ -57,20 +57,20 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         <div className="desktop-nav-links">
           <button
             type="button"
-            className={`desktop-tab-btn ${activeTab === 'home' ? 'active' : ''}`}
-            onClick={() => setActiveTab('home')}
-          >
-            <Home size={16} />
-            <span>Home</span>
-          </button>
-
-          <button
-            type="button"
             className={`desktop-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
             onClick={() => setActiveTab('attendance')}
           >
             <CalendarCheck size={16} />
             <span>Attendance</span>
+          </button>
+
+          <button
+            type="button"
+            className={`desktop-tab-btn ${activeTab === 'home' ? 'active' : ''}`}
+            onClick={() => setActiveTab('home')}
+          >
+            <Home size={16} />
+            <span>Home</span>
           </button>
 
           <button

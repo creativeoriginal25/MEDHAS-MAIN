@@ -15,22 +15,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     <nav className="bottom-tab-bar">
       <button 
         type="button"
-        className={`tab-btn ${activeTab === 'home' ? 'active' : ''}`}
-        onClick={() => setActiveTab('home')}
-      >
-        <Home size={19} />
-        <span>Home</span>
-        {activeTab === 'home' && <span className="tab-indicator" />}
-      </button>
-
-      <button 
-        type="button"
         className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
         onClick={() => setActiveTab('attendance')}
       >
         <CalendarCheck size={19} />
         <span>Attendance</span>
         {activeTab === 'attendance' && <span className="tab-indicator" />}
+      </button>
+
+      <button 
+        type="button"
+        className={`tab-btn ${activeTab === 'home' ? 'active' : ''}`}
+        onClick={() => setActiveTab('home')}
+      >
+        <Home size={19} />
+        <span>Home</span>
+        {activeTab === 'home' && <span className="tab-indicator" />}
       </button>
 
       <button 
