@@ -18,8 +18,41 @@ import {
   Check,
   Share2,
   Lock,
-  Plus
+  Plus,
+  ExternalLink
 } from 'lucide-react';
+
+const GithubIcon: React.FC<{ size?: number; className?: string }> = ({ size = 16, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+  >
+    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+  </svg>
+);
+
+const InstagramIcon: React.FC<{ size?: number; className?: string }> = ({ size = 16, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -928,11 +961,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* ========================================================= */}
         {activeTab === 'about' && (
           <div>
-            <div style={{ textAlign: 'center', padding: '0.5rem 0 1rem' }}>
-              <div className="brand-crest" style={{ margin: '0 auto 0.6rem', width: '42px', height: '42px' }}>
-                <School size={20} className="brand-icon-glyph" />
+            <div style={{ textAlign: 'center', padding: '0.5rem 0 0.85rem' }}>
+              <div className="brand-crest" style={{ margin: '0 auto 0.6rem', width: '44px', height: '44px' }}>
+                <School size={22} className="brand-icon-glyph" />
               </div>
-              <h4 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)' }}>
+              <h4 className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--ink)' }}>
                 MEDHAS
               </h4>
               <div style={{ fontSize: '0.78rem', color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
@@ -940,20 +973,232 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
 
+            {/* Creators & Engineering Team (First Lokesh, then Charan) */}
+            <div style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--rule)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.9rem 1rem',
+              marginBottom: '0.85rem',
+              boxShadow: '0 1px 4px rgba(36, 27, 78, 0.04)',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '0.55rem',
+                borderBottom: '1px solid var(--rule)',
+                marginBottom: '0.65rem',
+              }}>
+                <span className="font-serif" style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--ink)' }}>
+                  Creators & Engineering
+                </span>
+                <span className="badge badge-neutral" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
+                  SRKR Engineering College
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {/* 1. Lokesh Thanala (FIRST) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.55rem 0.75rem',
+                  background: 'var(--surface-alt)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--rule)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      <InstagramIcon size={17} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink)' }}>
+                        Lokesh Thanala
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
+                        Developer & Co-Creator
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href="https://www.instagram.com/lokeshthanala/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#E1306C',
+                      textDecoration: 'none',
+                      padding: '0.32rem 0.65rem',
+                    }}
+                  >
+                    <InstagramIcon size={13} />
+                    <span>Instagram</span>
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+
+                {/* 2. Charan (SECOND) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.55rem 0.75rem',
+                  background: 'var(--surface-alt)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--rule)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                    }}>
+                      <InstagramIcon size={17} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink)' }}>
+                        Charan
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
+                        Creator & Lead Developer
+                      </div>
+                    </div>
+                  </div>
+
+                  <a
+                    href="https://www.instagram.com/charan__3_/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#E1306C',
+                      textDecoration: 'none',
+                      padding: '0.32rem 0.65rem',
+                    }}
+                  >
+                    <InstagramIcon size={13} />
+                    <span>Instagram</span>
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* GitHub Open Source Repository */}
+            <div style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--rule)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.9rem 1rem',
+              marginBottom: '0.85rem',
+              boxShadow: '0 1px 4px rgba(36, 27, 78, 0.04)',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '0.55rem',
+                borderBottom: '1px solid var(--rule)',
+                marginBottom: '0.65rem',
+              }}>
+                <span className="font-serif" style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--ink)' }}>
+                  Source Code & Repository
+                </span>
+                <span className="badge badge-good" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
+                  Open Source
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '8px',
+                    background: 'var(--ink)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    flexShrink: 0,
+                  }}>
+                    <GithubIcon size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--ink)' }}>
+                      MEDHAS Platform
+                    </div>
+                    <div className="mono-num" style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
+                      creativeoriginal25 / MEDHAS-MAIN
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href="https://github.com/creativeoriginal25/MEDHAS-MAIN"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-sm"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    padding: '0.35rem 0.75rem',
+                  }}
+                >
+                  <GithubIcon size={14} />
+                  <span>View on GitHub</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            </div>
+
+            {/* Platform Specifications */}
             <div style={{
               background: 'var(--surface-alt)',
-              padding: '0.85rem',
+              padding: '0.8rem 0.95rem',
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--rule)',
-              fontSize: '0.8rem',
+              fontSize: '0.78rem',
               lineHeight: 1.5,
               color: 'var(--ink-soft)',
               marginBottom: '1rem',
             }}>
               <div>🏛️ <strong>Institution:</strong> S.R.K.R. Engineering College (Autonomous), Bhimavaram, AP.</div>
-              <div style={{ marginTop: '0.35rem' }}>📊 <strong>Attendance Suite:</strong> Period ledger, 75% calculator, safe bunk estimator, multi-day forecasting.</div>
-              <div style={{ marginTop: '0.35rem' }}>📚 <strong>Academic Hub:</strong> 10 branches, 8 first-year subjects (40 units syllabus & notes), 19 AI prompt templates.</div>
-              <div style={{ marginTop: '0.35rem' }}>🚀 <strong>Career & Campus:</strong> 50 career pathways, 4-year roadmaps, NutriDelight cafeteria catalog, helpline contacts.</div>
+              <div style={{ marginTop: '0.3rem' }}>📊 <strong>Attendance Suite:</strong> Period ledger, 75% calculator, safe bunk estimator, multi-day forecasting.</div>
+              <div style={{ marginTop: '0.3rem' }}>📚 <strong>Academic Hub:</strong> 10 branches, 8 first-year subjects (40 units syllabus & notes), 19 AI prompt templates.</div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
