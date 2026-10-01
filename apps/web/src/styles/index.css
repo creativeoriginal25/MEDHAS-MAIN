@@ -1163,3 +1163,105 @@ h1, h2, h3, h4, .heading-ledger {
   line-height: 1;
   color: var(--ink);
 }
+
+/* =========================================================
+   ADMIN CONSOLE SUITE STYLING
+   ========================================================= */
+.admin-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 1px 4px rgba(36, 27, 78, 0.03);
+  transition: all 0.15s ease;
+}
+
+.admin-stat-card:hover {
+  border-color: #c9bfa4;
+}
+
+.admin-branch-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-branch-chip:hover {
+  background: var(--surface-alt);
+  color: var(--ink);
+}
+
+.admin-branch-chip.active {
+  background: var(--ink);
+  color: #FFFFFF;
+  border-color: var(--ink);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+  text-align: left;
+}
+
+.admin-table th {
+  padding: 0.75rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--rule);
+  white-space: nowrap;
+}
+
+.admin-table td {
+  padding: 0.75rem 0.65rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+
+.admin-table tr:hover td {
+  background: rgba(36, 27, 78, 0.02);
+}
+
+/* Mobile-friendly Student Ledger Cards */
+.admin-student-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  margin-bottom: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(36, 27, 78, 0.03);
+}
+
+.admin-desktop-only {
+  display: block;
+}
+
+.admin-mobile-only {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .admin-desktop-only {
+    display: none !important;
+  }
+  .admin-mobile-only {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+}
+

@@ -175,9 +175,9 @@ def list_students(
         sec = db.query(Section).filter(Section.id == s.section_id).first() if s.section_id else None
         
         # Calculate overall attendance
-        logs = db.query(DailyLog).filter(DailyLog.user_id == s.id).all()
-        log_attended = sum(l.periods_present for l in logs)
-        log_total = sum(l.periods_total for l in logs)
+        logs = db.query(DailyLog).join(TimetableBlock, DailyLog.block_id == TimetableBlock.id).filter(DailyLog.user_id == s.id).all()
+        log_attended = sum((l.block.periods if l.block else 1) for l in logs if l.status == 'present')
+        log_total = sum((l.block.periods if l.block else 1) for l in logs if l.status in ('present', 'absent'))
         
         tot_attended = (s.baseline_attended or 0) + log_attended
         tot_periods = (s.baseline_total or 0) + log_total

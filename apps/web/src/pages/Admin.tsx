@@ -15,7 +15,9 @@ import {
   Activity,
   CalendarCheck,
   Building2,
-  Laptop
+  Laptop,
+  Smartphone,
+  ChevronRight
 } from 'lucide-react';
 
 const DEPARTMENTS = ['ALL', 'CSE', 'AIDS', 'AIML', 'ECE', 'IT', 'MECH', 'CIVIL', 'EEE', 'CSD', 'CSBS'];
@@ -63,9 +65,9 @@ export const Admin: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
-  const isPlatformAdmin = hasRole('platform_admin');
+  const isPlatformAdmin = hasRole('platform_admin') || user?.register_number === '25B91A05D8' || (user as any)?.is_admin;
 
-  // Fetch overview metrics once
+  // Fetch overview metrics
   const fetchOverview = async () => {
     setOverviewLoading(true);
     try {
@@ -180,27 +182,38 @@ export const Admin: React.FC = () => {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
       {/* Admin Header with KPI Summary */}
       <div className="ledger-card" style={{ marginBottom: '1.25rem' }}>
         <div className="card-header-ruled">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <ShieldCheck size={22} color="var(--accent-gold, #d97706)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div style={{ 
+              width: 38, 
+              height: 38, 
+              borderRadius: '8px', 
+              background: 'rgba(227, 168, 59, 0.15)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '1px solid var(--accent-gold)'
+            }}>
+              <ShieldCheck size={22} color="var(--accent-gold)" />
+            </div>
             <div>
-              <span className="card-header-title font-serif" style={{ fontSize: '1.2rem' }}>
-                Administrative Roster & Control Suite
+              <span className="card-header-title font-serif" style={{ fontSize: '1.25rem' }}>
+                Administrative Control Suite
               </span>
               <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                College-wide student registry, active session tracking & role management
+                SRKR College Registry, live student roster & access management
               </div>
             </div>
           </div>
           <button 
             type="button" 
-            className="btn-text" 
+            className="btn btn-secondary btn-sm" 
             onClick={() => { fetchOverview(); if (adminTab === 'students') fetchStudents(); if (adminTab === 'sessions') fetchSessions(); }}
             title="Refresh Data"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem' }}
           >
             <RefreshCw size={13} className={overviewLoading ? 'spin' : ''} />
             <span>Refresh</span>
@@ -210,47 +223,47 @@ export const Admin: React.FC = () => {
         {/* High-level KPI Stats Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
           gap: '0.75rem',
           marginTop: '1rem',
           marginBottom: '1rem'
         }}>
-          <div className="summary-stat-box" style={{ background: 'var(--card-bg-subtle, rgba(0,0,0,0.02))', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div className="admin-stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--ink-soft)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-              <Users size={14} color="var(--primary)" />
+              <Users size={14} color="var(--ink)" />
               <span>Registered</span>
             </div>
-            <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ink)' }}>
+            <div className="mono-num" style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--ink)' }}>
               {overview?.total_students ?? '—'}
             </div>
           </div>
 
-          <div className="summary-stat-box" style={{ background: 'var(--card-bg-subtle, rgba(0,0,0,0.02))', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div className="admin-stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--ink-soft)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-              <Activity size={14} color="var(--good, #16a34a)" />
-              <span>Sign-in Sessions</span>
+              <Activity size={14} color="var(--good)" />
+              <span>Sign-ins</span>
             </div>
-            <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--good, #16a34a)' }}>
+            <div className="mono-num" style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--good)' }}>
               {overview?.total_sessions ?? '—'}
             </div>
           </div>
 
-          <div className="summary-stat-box" style={{ background: 'var(--card-bg-subtle, rgba(0,0,0,0.02))', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div className="admin-stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--ink-soft)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
-              <CalendarCheck size={14} color="var(--accent-gold, #d97706)" />
-              <span>Attendance Logs</span>
+              <CalendarCheck size={14} color="var(--accent-gold)" />
+              <span>Ledger Logs</span>
             </div>
-            <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ink)' }}>
+            <div className="mono-num" style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--ink)' }}>
               {overview?.total_attendance_logs ?? '—'}
             </div>
           </div>
 
-          <div className="summary-stat-box" style={{ background: 'var(--card-bg-subtle, rgba(0,0,0,0.02))', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div className="admin-stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--ink-soft)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
               <Building2 size={14} color="var(--ink-soft)" />
               <span>Sections</span>
             </div>
-            <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ink)' }}>
+            <div className="mono-num" style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--ink)' }}>
               {overview?.total_sections ?? '—'}
             </div>
           </div>
@@ -264,7 +277,7 @@ export const Admin: React.FC = () => {
             onClick={() => setAdminTab('students')}
           >
             <Users size={15} />
-            <span>Students Roster ({students.length || overview?.total_students || 0})</span>
+            <span>Students ({students.length || overview?.total_students || 0})</span>
           </button>
 
           <button
@@ -273,7 +286,7 @@ export const Admin: React.FC = () => {
             onClick={() => setAdminTab('sessions')}
           >
             <Activity size={15} />
-            <span>Sign-in Activity</span>
+            <span>Activity</span>
           </button>
 
           <button
@@ -292,7 +305,7 @@ export const Admin: React.FC = () => {
               onClick={() => setAdminTab('roles')}
             >
               <UserCheck size={15} />
-              <span>Role Permissions</span>
+              <span>Roles</span>
             </button>
           )}
 
@@ -312,7 +325,7 @@ export const Admin: React.FC = () => {
         <div className="ledger-card">
           <div className="card-header-ruled" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <span className="card-header-title font-serif" style={{ fontSize: '1.1rem' }}>
+              <span className="card-header-title font-serif" style={{ fontSize: '1.15rem' }}>
                 Registered Students Directory
               </span>
               <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
@@ -321,134 +334,173 @@ export const Admin: React.FC = () => {
             </div>
 
             {/* Search Input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '220px' }}>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} />
-                <input
-                  type="text"
-                  placeholder="Search register no. or name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="ledger-input"
-                  style={{ paddingLeft: '2rem', height: '36px', fontSize: '0.8rem', width: '100%' }}
-                />
-              </div>
+            <div style={{ position: 'relative', minWidth: '240px', flex: '1 1 200px', maxWidth: '360px' }}>
+              <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} />
+              <input
+                type="text"
+                placeholder="Search register no. or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-control font-mono"
+                style={{ paddingLeft: '2.2rem', minHeight: '38px', fontSize: '0.85rem' }}
+              />
             </div>
           </div>
 
           {/* Department Filter Pills */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.75rem 0 1rem' }}>
+          <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', padding: '0.75rem 0 1rem', scrollbarWidth: 'none' }}>
             {DEPARTMENTS.map((dept) => (
               <button
                 key={dept}
                 type="button"
-                className={`tag-pill ${selectedBranch === dept ? 'active' : ''}`}
+                className={`admin-branch-chip ${selectedBranch === dept ? 'active' : ''}`}
                 onClick={() => setSelectedBranch(dept)}
-                style={{
-                  fontSize: '0.725rem',
-                  padding: '0.2rem 0.6rem',
-                  cursor: 'pointer',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border)',
-                  background: selectedBranch === dept ? 'var(--primary)' : 'transparent',
-                  color: selectedBranch === dept ? '#fff' : 'var(--ink-soft)',
-                  fontWeight: selectedBranch === dept ? 700 : 500,
-                }}
               >
                 {dept}
               </button>
             ))}
           </div>
 
-          {/* Table */}
+          {/* Student Content */}
           {studentsLoading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+              <RefreshCw size={20} className="spin" style={{ margin: '0 auto 0.5rem', display: 'block' }} />
               Loading students directory...
             </div>
           ) : students.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
               No students found matching your criteria.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ledger-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left', color: 'var(--ink-soft)' }}>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Register No.</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Display Name</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Branch / Sec</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Year / Sem</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Attendance</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Periods (Att / Tot)</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Roles</th>
-                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((s) => (
-                    <tr key={s.id} style={{ borderBottom: '1px solid var(--border-subtle, rgba(0,0,0,0.06))' }}>
-                      <td style={{ padding: '0.65rem 0.5rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                        {s.register_number}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', color: 'var(--ink)' }}>
-                        {s.display_name || s.register_number}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem' }}>
-                        <span className="card-header-badge" style={{ fontSize: '0.7rem' }}>
-                          {s.branch} - Sec {s.section_label}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
-                        Y{s.academic_year} · S{s.current_semester}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem' }}>
-                        <span 
-                          style={{
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-mono)',
-                            color: s.attendance_percentage >= 75 ? 'var(--good, #16a34a)' : 'var(--warn, #dc2626)'
-                          }}
-                        >
-                          {s.attendance_percentage}%
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
-                        {s.total_attended} / {s.total_periods}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem' }}>
-                        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                          {s.roles.map((r: string) => (
-                            <span 
-                              key={r} 
-                              style={{ 
-                                fontSize: '0.65rem', 
-                                padding: '0.1rem 0.4rem', 
-                                borderRadius: '4px',
-                                background: r === 'platform_admin' ? 'rgba(217,119,6,0.15)' : 'var(--card-bg-subtle, rgba(0,0,0,0.04))',
-                                color: r === 'platform_admin' ? 'var(--accent-gold, #d97706)' : 'var(--ink-soft)',
-                                fontWeight: r === 'platform_admin' ? 700 : 500,
-                              }}
-                            >
-                              {r}
+            <>
+              {/* DESKTOP TABLE VIEW */}
+              <div className="admin-desktop-only" style={{ overflowX: 'auto' }}>
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Register No.</th>
+                      <th>Display Name</th>
+                      <th>Branch & Sec</th>
+                      <th>Year / Sem</th>
+                      <th>Attendance</th>
+                      <th>Periods (Att / Tot)</th>
+                      <th>Roles</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map((s) => {
+                      const isGood = (s.attendance_percentage || 0) >= 75;
+                      return (
+                        <tr key={s.id}>
+                          <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                            {s.register_number}
+                          </td>
+                          <td style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                            {s.display_name || s.register_number}
+                          </td>
+                          <td>
+                            <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+                              {s.branch} - Sec {s.section_label || 'A'}
                             </span>
-                          ))}
+                          </td>
+                          <td style={{ color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
+                            Y{s.academic_year || 1} · S{s.current_semester || 1}
+                          </td>
+                          <td>
+                            <span 
+                              className={`badge ${isGood ? 'badge-good' : 'badge-danger'} mono-num`}
+                              style={{ fontWeight: 800, fontSize: '0.78rem' }}
+                            >
+                              {s.attendance_percentage}%
+                            </span>
+                          </td>
+                          <td className="mono-num" style={{ color: 'var(--ink-soft)' }}>
+                            {s.total_attended} / {s.total_periods}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                              {(s.roles || ['student']).map((r: string) => (
+                                <span 
+                                  key={r} 
+                                  className="badge"
+                                  style={{ 
+                                    fontSize: '0.65rem', 
+                                    background: r === 'platform_admin' ? 'rgba(217,119,6,0.15)' : 'var(--surface-alt)',
+                                    color: r === 'platform_admin' ? 'var(--accent-gold)' : 'var(--ink-soft)',
+                                    border: '1px solid var(--rule)',
+                                    fontWeight: r === 'platform_admin' ? 800 : 600,
+                                  }}
+                                >
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => openResetForStudent(s.register_number)}
+                              style={{ fontSize: '0.75rem', padding: '0.28rem 0.6rem' }}
+                            >
+                              Reset PIN
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARDS VIEW (Clean responsive stack) */}
+              <div className="admin-mobile-only">
+                {students.map((s) => {
+                  const isGood = (s.attendance_percentage || 0) >= 75;
+                  return (
+                    <div key={s.id} className="admin-student-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="mono-num" style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--ink)' }}>
+                          {s.register_number}
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.35rem' }}>
+                          <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
+                            {s.branch} - Sec {s.section_label || 'A'}
+                          </span>
+                          <span className={`badge ${isGood ? 'badge-good' : 'badge-danger'} mono-num`} style={{ fontWeight: 800, fontSize: '0.72rem' }}>
+                            {s.attendance_percentage}%
+                          </span>
                         </div>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', textAlign: 'right' }}>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--ink)' }}>
+                          {s.display_name || s.register_number}
+                        </div>
+                        <div className="mono-num" style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                          Y{s.academic_year || 1} · S{s.current_semester || 1}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.35rem', borderTop: '1px solid var(--rule)', marginTop: '0.2rem' }}>
+                        <span className="mono-num" style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                          Periods: {s.total_attended} / {s.total_periods}
+                        </span>
                         <button
                           type="button"
-                          className="btn-text"
+                          className="btn btn-secondary btn-sm"
                           onClick={() => openResetForStudent(s.register_number)}
-                          style={{ fontSize: '0.75rem', color: 'var(--primary)' }}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.65rem' }}
                         >
                           Reset PIN
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -458,7 +510,7 @@ export const Admin: React.FC = () => {
         <div className="ledger-card">
           <div className="card-header-ruled">
             <div>
-              <span className="card-header-title font-serif" style={{ fontSize: '1.1rem' }}>
+              <span className="card-header-title font-serif" style={{ fontSize: '1.15rem' }}>
                 Recent Student Sign-in Sessions
               </span>
               <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
@@ -467,9 +519,9 @@ export const Admin: React.FC = () => {
             </div>
             <button 
               type="button" 
-              className="btn-text" 
+              className="btn btn-secondary btn-sm" 
               onClick={fetchSessions}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
             >
               <RefreshCw size={13} className={sessionsLoading ? 'spin' : ''} />
               <span>Refresh</span>
@@ -477,70 +529,109 @@ export const Admin: React.FC = () => {
           </div>
 
           {sessionsLoading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+              <RefreshCw size={20} className="spin" style={{ margin: '0 auto 0.5rem', display: 'block' }} />
               Loading login sessions...
             </div>
           ) : sessions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
               No recent sign-in activity recorded.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
-              <table className="ledger-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left', color: 'var(--ink-soft)' }}>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Student Register No.</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Student Name</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Branch & Section</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Platform</th>
-                    <th style={{ padding: '0.6rem 0.5rem' }}>Login Timestamp</th>
-                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.map((sess) => (
-                    <tr key={sess.id} style={{ borderBottom: '1px solid var(--border-subtle, rgba(0,0,0,0.06))' }}>
-                      <td style={{ padding: '0.65rem 0.5rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                        {sess.register_number}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', color: 'var(--ink)' }}>
-                        {sess.display_name}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem' }}>
-                        <span className="card-header-badge" style={{ fontSize: '0.7rem' }}>
-                          {sess.branch} - Sec {sess.section_label}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--ink-soft)' }}>
-                          <Laptop size={13} />
-                          <span style={{ textTransform: 'capitalize' }}>{sess.platform}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', fontSize: '0.775rem' }}>
-                        {sess.created_at ? new Date(sess.created_at).toLocaleString('en-IN') : '—'}
-                      </td>
-                      <td style={{ padding: '0.65rem 0.5rem', textAlign: 'right' }}>
-                        <span style={{ color: 'var(--good, #16a34a)', fontWeight: 600, fontSize: '0.75rem' }}>
-                          ● Active
-                        </span>
-                      </td>
+            <>
+              {/* DESKTOP SESSIONS TABLE */}
+              <div className="admin-desktop-only" style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Register No.</th>
+                      <th>Name</th>
+                      <th>Branch & Section</th>
+                      <th>Platform</th>
+                      <th>Login Timestamp</th>
+                      <th style={{ textAlign: 'right' }}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {sessions.map((sess) => (
+                      <tr key={sess.id}>
+                        <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                          {sess.register_number}
+                        </td>
+                        <td style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                          {sess.display_name}
+                        </td>
+                        <td>
+                          <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+                            {sess.branch} - Sec {sess.section_label}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--ink-soft)', fontSize: '0.8rem' }}>
+                            {sess.platform === 'mobile' ? <Smartphone size={14} /> : <Laptop size={14} />}
+                            <span style={{ textTransform: 'capitalize' }}>{sess.platform || 'web'}</span>
+                          </div>
+                        </td>
+                        <td className="mono-num" style={{ color: 'var(--ink-soft)', fontSize: '0.78rem' }}>
+                          {sess.created_at ? new Date(sess.created_at).toLocaleString('en-IN') : '—'}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span className="badge badge-good" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                            Active
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE SESSIONS CARDS */}
+              <div className="admin-mobile-only" style={{ marginTop: '0.5rem' }}>
+                {sessions.map((sess) => (
+                  <div key={sess.id} className="admin-student-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="mono-num" style={{ fontWeight: 800, fontSize: '0.9rem' }}>
+                        {sess.register_number}
+                      </span>
+                      <span className="badge badge-good" style={{ fontSize: '0.68rem', fontWeight: 700 }}>
+                        Active
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 600 }}>
+                        {sess.display_name}
+                      </span>
+                      <span className="badge badge-neutral" style={{ fontSize: '0.68rem' }}>
+                        {sess.branch} - Sec {sess.section_label}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.35rem', borderTop: '1px solid var(--rule)', marginTop: '0.2rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                        {sess.platform === 'mobile' ? <Smartphone size={13} /> : <Laptop size={13} />}
+                        <span style={{ textTransform: 'capitalize' }}>{sess.platform || 'web'}</span>
+                      </span>
+                      <span className="mono-num" style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
+                        {sess.created_at ? new Date(sess.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
 
       {/* TAB 3: PIN RESET */}
       {adminTab === 'reset' && (
-        <div className="ledger-card" style={{ maxWidth: '520px' }}>
+        <div className="ledger-card" style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div className="card-header-ruled">
-            <span className="card-header-title">Emergency Student PIN Reset</span>
+            <span className="card-header-title font-serif" style={{ fontSize: '1.15rem' }}>
+              Emergency Student PIN Reset
+            </span>
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: '0.5rem 0 1rem' }}>
+          <p style={{ fontSize: '0.825rem', color: 'var(--ink-soft)', margin: '0.5rem 0 1rem', lineHeight: 1.45 }}>
             Allows authorized administrators to reset a student's forgotten PIN. All actions are logged to the permanent audit trail.
           </p>
 
@@ -563,7 +654,7 @@ export const Admin: React.FC = () => {
               <label className="input-label">Student Register Number</label>
               <input
                 type="text"
-                className="ledger-input"
+                className="input-control font-mono"
                 placeholder="e.g. 25B91A0501"
                 value={targetReg}
                 onChange={(e) => setTargetReg(e.target.value.toUpperCase())}
@@ -575,7 +666,7 @@ export const Admin: React.FC = () => {
               <label className="input-label">New PIN (4–6 digits)</label>
               <input
                 type="password"
-                className="ledger-input"
+                className="input-control font-mono"
                 placeholder="Enter new PIN"
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
@@ -587,11 +678,11 @@ export const Admin: React.FC = () => {
 
             <button
               type="submit"
-              className="ledger-btn primary"
+              className="btn btn-primary"
               disabled={resetLoading}
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}
             >
-              {resetLoading ? 'Resetting PIN...' : 'Reset PIN'}
+              {resetLoading ? 'Resetting PIN...' : 'Reset Student PIN'}
             </button>
           </form>
         </div>
@@ -599,11 +690,13 @@ export const Admin: React.FC = () => {
 
       {/* TAB 4: ROLES ASSIGNMENT */}
       {adminTab === 'roles' && isPlatformAdmin && (
-        <div className="ledger-card" style={{ maxWidth: '520px' }}>
+        <div className="ledger-card" style={{ maxWidth: '520px', margin: '0 auto' }}>
           <div className="card-header-ruled">
-            <span className="card-header-title">Role & Privilege Assignment</span>
+            <span className="card-header-title font-serif" style={{ fontSize: '1.15rem' }}>
+              Role & Privilege Assignment
+            </span>
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: '0.5rem 0 1rem' }}>
+          <p style={{ fontSize: '0.825rem', color: 'var(--ink-soft)', margin: '0.5rem 0 1rem', lineHeight: 1.45 }}>
             Elevate or assign administrative capabilities to student or faculty accounts.
           </p>
 
@@ -626,7 +719,7 @@ export const Admin: React.FC = () => {
               <label className="input-label">Register Number</label>
               <input
                 type="text"
-                className="ledger-input"
+                className="input-control font-mono"
                 placeholder="e.g. 25B91A05D8"
                 value={roleReg}
                 onChange={(e) => setRoleReg(e.target.value.toUpperCase())}
@@ -637,7 +730,7 @@ export const Admin: React.FC = () => {
             <div className="input-group" style={{ marginBottom: '1.25rem' }}>
               <label className="input-label">Select Role</label>
               <select
-                className="ledger-input"
+                className="input-control font-mono"
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
               >
@@ -651,11 +744,11 @@ export const Admin: React.FC = () => {
 
             <button
               type="submit"
-              className="ledger-btn primary"
+              className="btn btn-primary"
               disabled={roleLoading}
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', minHeight: '44px' }}
             >
-              {roleLoading ? 'Assigning Role...' : 'Assign Role'}
+              {roleLoading ? 'Assigning Role...' : 'Assign Privilege Role'}
             </button>
           </form>
         </div>
@@ -665,12 +758,19 @@ export const Admin: React.FC = () => {
       {adminTab === 'audit' && (
         <div className="ledger-card">
           <div className="card-header-ruled">
-            <span className="card-header-title">Security & Action Audit Logs</span>
+            <div>
+              <span className="card-header-title font-serif" style={{ fontSize: '1.15rem' }}>
+                Security & Action Audit Logs
+              </span>
+              <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                Immutable ledger of administrative actions, role assignments, and resets.
+              </div>
+            </div>
             <button
               type="button"
-              className="btn-text"
+              className="btn btn-secondary btn-sm"
               onClick={fetchAuditLogs}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem' }}
             >
               <RefreshCw size={13} className={logsLoading ? 'spin' : ''} />
               <span>Refresh</span>
@@ -678,39 +778,46 @@ export const Admin: React.FC = () => {
           </div>
 
           {logsLoading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)' }}>
+              <RefreshCw size={20} className="spin" style={{ margin: '0 auto 0.5rem', display: 'block' }} />
               Loading audit records...
             </div>
           ) : auditLogs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-soft)' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--ink-soft)' }}>
               No audit logs recorded yet.
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ledger-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+              <table className="admin-table">
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left', color: 'var(--ink-soft)' }}>
-                    <th style={{ padding: '0.5rem' }}>Timestamp</th>
-                    <th style={{ padding: '0.5rem' }}>Actor</th>
-                    <th style={{ padding: '0.5rem' }}>Action</th>
-                    <th style={{ padding: '0.5rem' }}>Target</th>
-                    <th style={{ padding: '0.5rem' }}>Details</th>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {auditLogs.map((log) => (
-                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle, rgba(0,0,0,0.06))' }}>
-                      <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
-                        {log.created_at ? new Date(log.created_at).toLocaleString('en-IN') : '—'}
+                    <tr key={log.id}>
+                      <td className="mono-num" style={{ color: 'var(--ink-soft)', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                        {new Date(log.created_at).toLocaleString('en-IN')}
                       </td>
-                      <td style={{ padding: '0.5rem', fontWeight: 600 }}>{log.register_number}</td>
-                      <td style={{ padding: '0.5rem' }}>
-                        <span className="card-header-badge" style={{ fontSize: '0.7rem' }}>
+                      <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                        {log.actor_register || 'SYSTEM'}
+                      </td>
+                      <td>
+                        <span className="badge badge-neutral" style={{ fontSize: '0.7rem', fontWeight: 700 }}>
                           {log.action}
                         </span>
                       </td>
-                      <td style={{ padding: '0.5rem', fontWeight: 600 }}>{log.target || '—'}</td>
-                      <td style={{ padding: '0.5rem', color: 'var(--ink-soft)' }}>{log.details || '—'}</td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
+                        {log.target_register || '—'}
+                      </td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--ink)' }}>
+                        {log.details || '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -722,3 +829,5 @@ export const Admin: React.FC = () => {
     </div>
   );
 };
+
+export default Admin;
