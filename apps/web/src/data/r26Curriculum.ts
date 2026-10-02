@@ -1940,6 +1940,181 @@ export function getDepartmentCurriculum(deptCode: DepartmentCode): DepartmentCur
 }
 
 // =====================================================================
+// HIERARCHICAL ACADEMIC DATA ARCHITECTURE
+// academicData -> branch -> academicYear (1..4) -> semester (1..8) -> AcademicSemesterData
+// =====================================================================
+
+export interface StudentAcademicContext {
+  name: string;
+  registerNumber: string;
+  branch: DepartmentCode;
+  academicYear: number;
+  semester: number;
+}
+
+export interface AcademicSemesterData {
+  code: DepartmentCode;
+  branch: DepartmentCode;
+  name: string;
+  branchName: string;
+  academicYear: string;
+  semester: string;
+  yearNumber: number;
+  semesterNumber: number;
+  yearLabel: string;
+  semesterLabel: string;
+  regulation: string;
+  theory: SubjectCourse[];
+  labs: SubjectCourse[];
+  isAvailable: boolean;
+  statusNote?: string;
+}
+
+export const ACADEMIC_YEARS = [1, 2, 3, 4] as const;
+export const SEMESTERS_PER_YEAR: Record<number, number[]> = {
+  1: [1, 2],
+  2: [3, 4],
+  3: [5, 6],
+  4: [7, 8],
+};
+
+const YEAR_ROMAN = ['', 'I', 'II', 'III', 'IV'];
+const SEM_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
+/**
+ * Hierarchical Academic Data Structure:
+ * academicData -> branch -> academicYear -> semester -> AcademicSemesterData
+ * Keeps R26 first-year branch-specific data strictly under Year 1 -> Semester 1.
+ */
+export const academicData: Record<
+  DepartmentCode,
+  Record<number, Record<number, AcademicSemesterData>>
+> = ((): any => {
+  const result: any = {};
+  const branches: DepartmentCode[] = [
+    'CSE', 'CSIT', 'AIML', 'AIDS', 'IT', 'CSBS',
+    'CSD', 'CIC', 'ECE', 'EEE', 'CIVIL', 'MECH'
+  ];
+
+  branches.forEach(dept => {
+    result[dept] = {};
+    const baseCurriculum = r26Curriculum[dept];
+    for (let y = 1; y <= 4; y++) {
+      result[dept][y] = {};
+      const sems = SEMESTERS_PER_YEAR[y] || [y * 2 - 1, y * 2];
+      sems.forEach(s => {
+        const yLabel = `${YEAR_ROMAN[y] || y} B.Tech`;
+        const sLabel = `${SEM_ROMAN[s] || s} Semester`;
+
+        if (y === 1 && s === 1) {
+          // Existing first-year R26 branch-specific curriculum under Year 1 -> Semester 1
+          result[dept][y][s] = {
+            code: dept,
+            branch: dept,
+            name: baseCurriculum.name,
+            branchName: baseCurriculum.name,
+            academicYear: 'I B.Tech',
+            semester: 'I Semester',
+            yearNumber: 1,
+            semesterNumber: 1,
+            yearLabel: 'I B.Tech',
+            semesterLabel: 'I Semester',
+            regulation: 'R26',
+            theory: baseCurriculum.theory,
+            labs: baseCurriculum.labs,
+            isAvailable: true,
+          };
+        } else {
+          // Scoped structure for higher years/semesters (not yet published by department faculty)
+          result[dept][y][s] = {
+            code: dept,
+            branch: dept,
+            name: baseCurriculum.name,
+            branchName: baseCurriculum.name,
+            academicYear: yLabel,
+            semester: sLabel,
+            yearNumber: y,
+            semesterNumber: s,
+            yearLabel: yLabel,
+            semesterLabel: sLabel,
+            regulation: 'R26',
+            theory: [],
+            labs: [],
+            isAvailable: false,
+            statusNote: `Curriculum & courseware for Year ${y} (${sLabel}) is currently being prepared and verified by the ${baseCurriculum.name} department faculty.`,
+          };
+        }
+      });
+    }
+  });
+
+  return result;
+})();
+
+/**
+ * Resolves the student's authenticated academic context strictly from the authenticated profile/session.
+ */
+export function getStudentAcademicContext(user: {
+  display_name?: string | null;
+  register_number?: string | null;
+  branch?: string | null;
+  academic_year?: number | null;
+  current_semester?: number | null;
+} | null): StudentAcademicContext {
+  const branch = resolveStudentDepartment(user);
+  let academicYear = Number(user?.academic_year) || 1;
+  let semester = Number(user?.current_semester) || 1;
+
+  if (academicYear < 1 || academicYear > 4) academicYear = 1;
+  if (semester < 1 || semester > 8) semester = (academicYear * 2) - 1;
+
+  return {
+    name: user?.display_name || user?.register_number || 'Student',
+    registerNumber: (user?.register_number || '').trim().toUpperCase(),
+    branch,
+    academicYear,
+    semester,
+  };
+}
+
+/**
+ * Returns strictly scoped academic data for branch + academicYear + semester.
+ * Guarantees that Year 2 students NEVER see Year 1 courses, and Year 1 students NEVER see Year 2.
+ */
+export function getScopedAcademicData(
+  branch: DepartmentCode,
+  academicYear: number = 1,
+  semester: number = 1
+): AcademicSemesterData {
+  const deptData = academicData[branch] || academicData.CSE;
+  const yearData = deptData[academicYear];
+  if (yearData && yearData[semester]) {
+    return yearData[semester];
+  }
+
+  const yLabel = `${YEAR_ROMAN[academicYear] || academicYear} B.Tech`;
+  const sLabel = `${SEM_ROMAN[semester] || semester} Semester`;
+
+  return {
+    code: branch,
+    branch,
+    name: deptData[1]?.[1]?.branchName || `Department of ${branch}`,
+    branchName: deptData[1]?.[1]?.branchName || `Department of ${branch}`,
+    academicYear: yLabel,
+    semester: sLabel,
+    yearNumber: academicYear,
+    semesterNumber: semester,
+    yearLabel: yLabel,
+    semesterLabel: sLabel,
+    regulation: 'R26',
+    theory: [],
+    labs: [],
+    isAvailable: false,
+    statusNote: `Curriculum & courseware for Year ${academicYear} (${sLabel}) is currently being prepared by the department faculty.`,
+  };
+}
+
+// =====================================================================
 // R26 FACULTY ASSIGNMENT REGISTRY (Centralized Single Source of Truth)
 // =====================================================================
 

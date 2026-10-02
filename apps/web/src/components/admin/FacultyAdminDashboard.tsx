@@ -329,7 +329,9 @@ export const FacultyAdminDashboard: React.FC = () => {
                 {scope?.branchName || 'Computer Science and Engineering'} ({scope?.branch || 'CSE'})
               </span>
               <span>•</span>
-              <span>I B.Tech · I Semester</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
+                Year {scope?.year || 1} · Semester {scope?.semester || 1}
+              </span>
               <span>•</span>
               <span style={{ 
                 background: 'rgba(36, 35, 76, 0.08)', 
@@ -723,9 +725,32 @@ export const FacultyAdminDashboard: React.FC = () => {
           <div className="ledger-card">
             <div className="card-header-ruled">
               <span className="card-header-title font-serif">Publish Resource to Students</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
-                {scope?.branch} · {scope?.subject}
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Lock size={12} />
+                <span>{scope?.branch} · Year {scope?.year || 1} · Sem {scope?.semester || 1}</span>
               </span>
+            </div>
+
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '0.65rem 0.85rem',
+              background: 'rgba(36, 35, 76, 0.04)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.8rem',
+              color: 'var(--ink-soft)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Lock size={13} color="var(--accent-gold, #d97706)" />
+                <span style={{ fontWeight: 600, color: 'var(--ink)' }}>Auto-Inherited Academic Scope:</span>
+                <span>{scope?.branch} · Year {scope?.year || 1} · Semester {scope?.semester || 1} · {scope?.subject}</span>
+              </span>
+              <span className="badge badge-neutral mono-num" style={{ fontSize: '0.72rem' }}>Read-Only Locked</span>
             </div>
 
             {uploadSuccess && (

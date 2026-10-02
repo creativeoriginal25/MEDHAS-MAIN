@@ -30,6 +30,8 @@ export interface FacultyProfile {
 export interface FacultyResource {
   id: number | string;
   branch: string;
+  academicYear?: number;
+  semester?: number;
   subject: string;
   subjectId: string;
   unit: string;
@@ -103,12 +105,14 @@ export const facultyApi = {
   },
 
   /**
-   * Student endpoint to fetch published faculty materials strictly for student's branch + subject
+   * Student endpoint to fetch published faculty materials strictly scoped by Branch + Academic Year + Semester + Subject
    */
-  getStudentResources: (branch: string, subjectId: string): Promise<any[]> => {
+  getStudentResources: (branch: string, subjectId: string, year: number = 1, semester: number = 1): Promise<any[]> => {
     const sp = new URLSearchParams();
     sp.append('branch', branch);
     sp.append('subject_id', subjectId);
+    sp.append('year', String(year));
+    sp.append('semester', String(semester));
     return api.get<any[]>(`/faculty/student-resources?${sp.toString()}`);
   },
 };

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
+  getStudentAcademicContext,
+  getScopedAcademicData,
   resolveStudentDepartment, 
   getDepartmentCurriculum, 
   SubjectCourse, 
@@ -26,22 +28,31 @@ import {
   FileCheck, 
   Compass, 
   Download,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 
 export const Learn: React.FC = () => {
   const { user } = useAuth();
 
-  // Read student's existing department as the SINGLE SOURCE OF TRUTH
-  // No second department prompt, no manual branch switcher
-  const deptCode = resolveStudentDepartment(user);
-  const curriculum = getDepartmentCurriculum(deptCode);
+  // Authenticated Student Academic Context is the SINGLE SOURCE OF TRUTH
+  // Scoped strictly by: Branch + Academic Year + Semester
+  const studentContext = useMemo(() => getStudentAcademicContext(user), [user]);
+  const deptCode = studentContext.branch;
+  const academicYear = studentContext.academicYear;
+  const semester = studentContext.semester;
+
+  // Hierarchical scoped curriculum for authenticated student (Year 1 -> Sem 1, Year 2 -> Sem 3, etc.)
+  const curriculum = useMemo(
+    () => getScopedAcademicData(deptCode, academicYear, semester),
+    [deptCode, academicYear, semester]
+  );
 
   const [subTab, setSubTab] = useState<'courses' | 'search' | 'saved'>('courses');
   const [selectedSubject, setSelectedSubject] = useState<SubjectCourse | null>(null);
   const [selectedUnitNumber, setSelectedUnitNumber] = useState<number | null>(null);
 
-  // Search state (strictly scoped to student's department)
+  // Search state (strictly scoped to student's department, year and semester)
   const [searchQuery, setSearchQuery] = useState('');
 
   // Saved resources state
@@ -54,21 +65,21 @@ export const Learn: React.FC = () => {
   const [readerUnit, setReaderUnit] = useState<{ unit: UnitDetail; subjectName: string; subjectCode: string } | null>(null);
   const [readerLab, setReaderLab] = useState<{ lab: SubjectCourse; experiment?: LabExperiment } | null>(null);
 
-  // Published Faculty Courseware & Resources (Strictly Branch-Scoped)
+  // Published Faculty Courseware & Resources (Strictly Branch + Year + Semester Scoped)
   const [facultyResources, setFacultyResources] = useState<any[]>([]);
   const [loadingFacultyRes, setLoadingFacultyRes] = useState(false);
 
   useEffect(() => {
     if (selectedSubject) {
       setLoadingFacultyRes(true);
-      facultyApi.getStudentResources(deptCode, selectedSubject.id)
+      facultyApi.getStudentResources(deptCode, selectedSubject.id, academicYear, semester)
         .then(data => setFacultyResources(data))
         .catch(err => console.error('Failed to load faculty resources', err))
         .finally(() => setLoadingFacultyRes(false));
     } else {
       setFacultyResources([]);
     }
-  }, [selectedSubject, deptCode]);
+  }, [selectedSubject, deptCode, academicYear, semester]);
 
   const toggleSaveUnit = (key: string) => {
     setSavedUnits(prev => {
@@ -158,10 +169,27 @@ export const Learn: React.FC = () => {
 
           <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="badge badge-neutral mono-num" style={{ fontWeight: 700, fontSize: '0.8rem' }}>
-              BRANCH: {curriculum.code}
+              BRANCH: {deptCode}
+            </span>
+            <span className="badge badge-neutral mono-num" style={{ fontWeight: 700, fontSize: '0.8rem' }}>
+              YEAR {academicYear} · SEM {semester}
             </span>
             <span className="badge badge-good mono-num" style={{ fontSize: '0.78rem' }}>
               {curriculum.theory.length} Theory · {curriculum.labs.length} Practical
+            </span>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              fontSize: '0.72rem',
+              color: 'var(--ink-soft)',
+              padding: '0.2rem 0.5rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--paper-subtle, #f8fafc)',
+              border: '1px solid var(--border-subtle, #e2e8f0)'
+            }}>
+              <Lock size={11} color="var(--accent-gold, #d97706)" />
+              <span>Locked Scope</span>
             </span>
           </div>
         </div>
@@ -515,7 +543,48 @@ export const Learn: React.FC = () => {
               )}
             </div>
           ) : (
-            /* B. Overview: RENDER THEORY COURSES & LAB COURSES GRIDS */
+            /* B. Overview: RENDER THEORY COURSES & LAB COURSES GRIDS OR IN-PREPARATION PLACEHOLDER */
+            (!curriculum.isAvailable || (curriculum.theory.length === 0 && curriculum.labs.length === 0)) ? (
+              /* Scoped In-Preparation State for Higher Academic Years / Semesters */
+              <div className="ledger-card" style={{ padding: '3rem 1.5rem', textAlign: 'center', border: '1px solid var(--rule)' }}>
+                <div style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: '50%',
+                  background: 'rgba(230, 162, 60, 0.12)',
+                  color: 'var(--accent-gold, #d97706)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.25rem auto'
+                }}>
+                  <GraduationCap size={30} />
+                </div>
+                <h2 className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+                  Curriculum & Courseware In Preparation
+                </h2>
+                <div style={{ maxWidth: 580, margin: '0.85rem auto 1.5rem auto', color: 'var(--ink-soft)', fontSize: '0.92rem', lineHeight: 1.6 }}>
+                  You are authenticated as a <strong style={{ color: 'var(--ink)' }}>Year {academicYear} (Semester {semester})</strong> student in <strong style={{ color: 'var(--ink)' }}>{curriculum.branchName} ({deptCode})</strong>.
+                  <br />
+                  {curriculum.statusNote || 'Curriculum for your academic year and semester is currently being finalized by the department faculty.'}
+                </div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.45rem 1rem',
+                  background: 'var(--paper-subtle, #f8fafc)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border-subtle, #e2e8f0)',
+                  fontSize: '0.8rem',
+                  color: 'var(--ink-soft)',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  <Lock size={13} color="var(--accent-gold, #d97706)" />
+                  <span>Authenticated Academic Scope: {deptCode} · Year {academicYear} · Semester {semester}</span>
+                </div>
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               {/* SECTION 1: THEORY COURSES */}
               <div>
@@ -675,6 +744,7 @@ export const Learn: React.FC = () => {
                 </div>
               </div>
             </div>
+            )
           )}
         </div>
       )}
@@ -685,10 +755,10 @@ export const Learn: React.FC = () => {
           <div className="ledger-card" style={{ marginBottom: '1.25rem', border: '1px solid var(--rule)' }}>
             <div className="card-header-ruled">
               <span className="card-header-title font-serif" style={{ fontSize: '1.2rem' }}>
-                Search {curriculum.code} Academic Repository
+                Search {deptCode} Academic Repository
               </span>
               <div style={{ fontSize: '0.78rem', color: 'var(--ink-soft)', marginTop: '0.2rem' }}>
-                Search restricted to {curriculum.name} (I B.Tech · I Sem). Cross-department content is isolated.
+                Search restricted to {curriculum.branchName} ({curriculum.yearLabel} · {curriculum.semesterLabel}). Cross-year & cross-department content is isolated.
               </div>
             </div>
             <div style={{ position: 'relative', marginTop: '0.75rem' }}>

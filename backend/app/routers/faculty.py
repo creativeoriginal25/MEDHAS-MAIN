@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, get_user_roles
+from app.auth.dependencies import get_current_user, get_user_roles, get_optional_user
 from app.models.user import User
 from app.models.audit import AuditLog
 
@@ -155,24 +155,80 @@ class ResourceUploadRequest(BaseModel):
     semester: Optional[int] = None
 
 
+def parse_resource_scope(subject_str: str) -> Dict[str, Any]:
+    """Parse branch, year, semester, and subject key from the Apps Script row 'subject' field."""
+    s = (subject_str or "").strip()
+    branch = None
+    year = None
+    semester = None
+    sub_key = s.lower()
+
+    # Format 1: "BRANCH:Y{year}:S{sem}:{key}" (e.g. "CSE:Y1:S1:1styearclanguage" or "CSE:Y1:S1:cse-ctps-c")
+    parts = s.split(":")
+    if len(parts) >= 4 and parts[1].upper().startswith("Y") and parts[2].upper().startswith("S"):
+        branch = parts[0].strip().upper()
+        try:
+            year = int(parts[1][1:])
+        except ValueError:
+            year = 1
+        try:
+            semester = int(parts[2][1:])
+        except ValueError:
+            semester = 1
+        sub_key = ":".join(parts[3:]).strip().lower()
+    elif len(parts) == 2:
+        branch = parts[0].strip().upper()
+        sub_key = parts[1].strip().lower()
+        if "1styear" in sub_key:
+            year = 1
+            semester = 1
+    else:
+        # Legacy without colon, e.g. "1styearclanguage", "1styearmaths", "1styearphysics", "1styearbeee"
+        if "clanguage" in sub_key or "maths" in sub_key:
+            branch = "CSE"
+            year = 1
+            semester = 1
+        elif "physics" in sub_key:
+            branch = "ECE"
+            year = 1
+            semester = 1
+        elif "beee" in sub_key or "bec" in sub_key:
+            branch = "EEE"
+            year = 1
+            semester = 1
+        elif "1styear" in sub_key:
+            year = 1
+            semester = 1
+
+    return {
+        "branch": branch,
+        "year": year or 1,
+        "semester": semester or 1,
+        "sub_key": sub_key,
+    }
+
+
 def matches_faculty_scope(item: Dict[str, Any], scope: Dict[str, Any]) -> bool:
     """Check if a raw resource row from Apps Script belongs to the faculty's locked scope."""
-    row_subject = str(item.get("subject", "")).strip().lower()
+    parsed = parse_resource_scope(str(item.get("subject", "")))
     branch = scope["branch"].upper()
     sub_id = scope["subjectId"].lower()
     curr_id = scope["curriculumId"].lower()
 
-    # 1. Scoped format (e.g. 'CSE:cse-ctps-c' or 'CSE:1styearclanguage')
-    if ":" in row_subject:
-        parts = row_subject.split(":", 1)
-        row_branch = parts[0].strip().upper()
-        if row_branch != branch:
-            return False
-        row_sub = parts[1].strip().lower()
-    else:
-        row_sub = row_subject
+    # 1. Branch lock
+    if parsed["branch"] and parsed["branch"] != branch:
+        return False
 
-    # 2. Match based on faculty branch and subject
+    # 2. Academic Year lock
+    if parsed["year"] != scope["year"]:
+        return False
+
+    # 3. Semester lock
+    if parsed["semester"] != scope["semester"]:
+        return False
+
+    # 4. Subject match
+    row_sub = parsed["sub_key"]
     if branch == "CSE":
         # CTPS-C / C Language
         if any(k in sub_id or k in curr_id for k in ["ctps", "c-lang", "c"]):
@@ -245,6 +301,8 @@ async def list_faculty_resources(
             filtered.append({
                 "id": item.get("id"),
                 "branch": scope["branch"],
+                "academicYear": scope["year"],
+                "semester": scope["semester"],
                 "subject": scope["subject"],
                 "subjectId": scope["subjectId"],
                 "unit": item.get("unit", "Unit 1"),
@@ -319,7 +377,9 @@ async def upload_faculty_resource(
     elif "bec" in sub_id or "circuit" in sub_id or "beee" in sub_id:
         legacy_subject = "1styearbeee"
 
-    scoped_subject = legacy_subject
+    # Scoped subject ensuring zero breakage with existing Apps Script/Sheet pipeline:
+    # Format: BRANCH:Y{academicYear}:S{semester}:{legacy_subject}
+    scoped_subject = f"{scope['branch']}:Y{scope['year']}:S{scope['semester']}:{legacy_subject}"
 
     file_b64 = req.fileBase64 or ""
     if file_b64 and not file_b64.startswith("data:"):
@@ -375,6 +435,8 @@ async def upload_faculty_resource(
         "success": True,
         "id": resource_id,
         "branch": scope["branch"],
+        "academicYear": scope["year"],
+        "semester": scope["semester"],
         "subject": scope["subject"],
         "subjectId": scope["subjectId"],
         "unit": req.unit,
@@ -474,10 +536,43 @@ def get_faculty_audit_logs(
 async def get_student_resources(
     branch: str = Query(..., description="Student's department code, e.g. 'CSE'"),
     subject_id: str = Query(..., description="Subject code or ID, e.g. 'R26-CTPSC' or 'cse-ctps-c'"),
+    year: int = Query(default=1, description="Student's academic year (1..4)"),
+    semester: int = Query(default=1, description="Student's current semester (1..8)"),
+    user: Optional[User] = Depends(get_optional_user),
 ):
-    """Public/Student endpoint to retrieve published faculty resources for a specific branch and subject."""
+    """Public/Student endpoint to retrieve published faculty resources strictly scoped by Branch + Year + Semester + Subject."""
     clean_branch = branch.strip().upper()
     clean_sub = subject_id.strip().lower()
+
+    # Server-Side Authorization: If student is authenticated, enforce strict academic lock
+    if user:
+        student_branch = "CSE"
+        if user.department and user.department.code:
+            student_branch = user.department.code.upper()
+        elif user.section and user.section.branch:
+            student_branch = user.section.branch.upper()
+
+        user_reg = user.register_number.upper()
+        is_elevated = user_reg in ("ADMIN01", "25B91A05U8") or user_reg.startswith("FAC_")
+        if not is_elevated:
+            # 1. Branch Lock
+            if clean_branch != student_branch:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Forbidden: You are registered in {student_branch} and cannot access {clean_branch} academic resources.",
+                )
+            # 2. Year Lock
+            if user.academic_year and year != user.academic_year:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Forbidden: You are registered in Academic Year {user.academic_year} and cannot access Year {year} resources.",
+                )
+            # 3. Semester Lock
+            if user.current_semester and semester != user.current_semester:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Forbidden: You are registered in Semester {user.current_semester} and cannot access Semester {semester} resources.",
+                )
 
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as client:
@@ -491,16 +586,22 @@ async def get_student_resources(
 
     matching = []
     for item in items:
-        row_subject = str(item.get("subject", "")).strip().lower()
-        if ":" in row_subject:
-            parts = row_subject.split(":", 1)
-            b = parts[0].strip().upper()
-            if b != clean_branch:
-                continue
-            s = parts[1].strip().lower()
-        else:
-            s = row_subject
+        parsed = parse_resource_scope(str(item.get("subject", "")))
 
+        # 1. Branch filter
+        if parsed["branch"] and parsed["branch"] != clean_branch:
+            continue
+
+        # 2. Academic Year filter (strictly enforces that Year 1 students don't see Year 2, and vice-versa)
+        if parsed["year"] != year:
+            continue
+
+        # 3. Semester filter
+        if parsed["semester"] != semester:
+            continue
+
+        # 4. Subject filter
+        s = parsed["sub_key"]
         # CSE — CTPS-C / C Language
         if clean_branch == "CSE" and any(k in clean_sub for k in ["ctps", "clanguage", "c-lang", "c"]):
             if any(k in s for k in ["ctps", "clanguage", "c-lang", "1styearclanguage", "cse-ctps-c", "r26-ctpsc"]):
