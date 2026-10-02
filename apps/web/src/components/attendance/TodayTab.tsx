@@ -148,13 +148,37 @@ export const TodayTab: React.FC = () => {
     return (b?.status && b.status !== 'unmarked') ? b.status : null;
   };
 
+  const safeNum = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    const n = Number(val);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const formatPct = (val: number): string => {
+    if (!Number.isFinite(val)) return '0.00';
+    return val.toFixed(2);
+  };
+
+  const formatDelta = (delta: number, isPresent = true): string => {
+    if (!Number.isFinite(delta) || Math.abs(delta) < 0.0001) {
+      return isPresent ? '+0.00%' : '-0.00%';
+    }
+    const sign = delta > 0 ? '+' : '';
+    return `${sign}${delta.toFixed(2)}%`;
+  };
+
   const calculateImpact = (block: BlockItem) => {
-    const totAttended = summary?.total_attended ?? summary?.overall?.attended ?? user?.baseline_attended ?? 0;
-    const totTotal = summary?.total_periods ?? summary?.overall?.total ?? user?.baseline_total ?? 0;
-    const currentPct = totTotal > 0 ? (totAttended / totTotal) * 100 : 0;
-    const k = block.periods || 1;
+    const sumTot = safeNum(summary?.total_periods);
+    const sumAtt = safeNum(summary?.total_attended);
+    const baseTotUser = safeNum(user?.baseline_total);
+    const baseAttUser = safeNum(user?.baseline_attended);
+
+    const totAttended = sumTot > 0 ? sumAtt : baseAttUser;
+    const totTotal = sumTot > 0 ? sumTot : baseTotUser;
+    const k = Math.max(1, safeNum(block?.periods));
     const curStatus = getBlockStatus(block.id);
 
+    // Determine baseline without this block to project delta accurately
     let baseAtt = totAttended;
     let baseTot = totTotal;
     if (curStatus === 'present') {
@@ -164,21 +188,25 @@ export const TodayTab: React.FC = () => {
       baseTot = Math.max(0, totTotal - k);
     }
 
+    const basePct = baseTot > 0 ? (baseAtt / baseTot) * 100 : 0;
+
+    // Attending this block
     const newAttPres = baseAtt + k;
     const newTotPres = baseTot + k;
     const pctIfPres = newTotPres > 0 ? (newAttPres / newTotPres) * 100 : 100;
-    const deltaPres = pctIfPres - currentPct;
+    const deltaPres = pctIfPres - basePct;
 
+    // Missing this block
     const newAttAbs = baseAtt;
     const newTotAbs = baseTot + k;
     const pctIfAbs = newTotAbs > 0 ? (newAttAbs / newTotAbs) * 100 : 0;
-    const deltaAbs = pctIfAbs - currentPct;
+    const deltaAbs = pctIfAbs - basePct;
 
     return {
-      pctIfPresent: pctIfPres.toFixed(1),
-      deltaPres: deltaPres >= 0 ? `+${deltaPres.toFixed(1)}%` : `${deltaPres.toFixed(1)}%`,
-      pctIfAbsent: pctIfAbs.toFixed(1),
-      deltaAbs: `${deltaAbs.toFixed(1)}%`,
+      pctIfPresent: formatPct(pctIfPres),
+      deltaPres: formatDelta(deltaPres, true),
+      pctIfAbsent: formatPct(pctIfAbs),
+      deltaAbs: formatDelta(deltaAbs, false),
     };
   };
 
