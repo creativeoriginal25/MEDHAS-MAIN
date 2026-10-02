@@ -145,11 +145,18 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     logger.info(f"Login attempt: reg='{reg}', pin_len={len(pin)}, valid={is_valid}")
 
-    if not user or not is_valid:
+    if not user:
+        record_failed_attempt(reg, client_ip)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Register number '{reg}' is not registered yet. Please click 'Register New Student' below to create your account.",
+        )
+
+    if not is_valid:
         record_failed_attempt(reg, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid register number or PIN.",
+            detail=f"Incorrect PIN for '{reg}'. Please enter the PIN you created during registration, or contact your admin to reset it.",
         )
 
     clear_rate_limit(reg)

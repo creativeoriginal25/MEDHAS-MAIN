@@ -204,6 +204,35 @@ def list_students(
     return result
 
 
+@router.post("/reset-pin")
+def reset_student_pin(
+    req: PinResetRequest,
+    admin: User = Depends(require_role("platform_admin", "attendance_admin")),
+    db: Session = Depends(get_db),
+):
+    """Admin endpoint to reset any student's PIN."""
+    target_reg = req.target_register_number.strip().upper()
+    target = db.query(User).filter(User.register_number == target_reg).first()
+    if not target:
+        raise HTTPException(status_code=404, detail=f"Student '{target_reg}' not found.")
+    target.pin_hash = hash_pin(req.new_pin.strip())
+    db.add(PinResetLog(
+        user_id=target.id,
+        reset_by_id=admin.id,
+        ip_address="admin-panel",
+    ))
+    db.add(AuditLog(
+        user_id=admin.id,
+        register_number=admin.register_number,
+        action="ADMIN_PIN_RESET",
+        target=target_reg,
+        details=f"Admin reset PIN for {target_reg}",
+    ))
+    db.commit()
+    return {"success": True, "message": f"PIN for {target.register_number} successfully reset to {req.new_pin}."}
+
+
+
 # --- Section/Timetable Admin ---
 
 @router.get("/sections")

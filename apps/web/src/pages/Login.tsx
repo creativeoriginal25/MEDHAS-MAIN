@@ -171,9 +171,51 @@ export const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div className="alert-callout error">
-            <AlertCircle size={16} />
-            <span>{error}</span>
+          <div className="alert-callout error" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem', padding: '0.85rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={18} style={{ flexShrink: 0, color: 'var(--bad, #dc2626)' }} />
+              <span style={{ fontSize: '0.85rem', lineHeight: 1.45, fontWeight: 500 }}>{error}</span>
+            </div>
+            {error.toLowerCase().includes('not registered') && !isRegister && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  setIsRegister(true);
+                  setError(null);
+                }}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  marginTop: '0.25rem',
+                  padding: '0.5rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700
+                }}
+              >
+                <span>Register {registerNumber ? `'${registerNumber}'` : 'Now'} as New Student →</span>
+              </button>
+            )}
+            {error.toLowerCase().includes('already exists') && isRegister && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setIsRegister(false);
+                  setError(null);
+                }}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  marginTop: '0.25rem',
+                  padding: '0.5rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700
+                }}
+              >
+                <span>Switch to Sign In →</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -394,6 +436,37 @@ export const Login: React.FC = () => {
           >
             {loading ? 'Verifying...' : isRegister ? 'Create Account & Access' : 'Access Attendance Ledger'}
           </button>
+
+          <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid var(--rule)', paddingTop: '1rem' }}>
+            {!isRegister ? (
+              <div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: '0 0 0.4rem 0' }}>
+                  First time using Medhas?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setIsRegister(true); setError(null); }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-gold, #d97706)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  >
+                    Register your Roll Number here
+                  </button>
+                </p>
+                <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', margin: 0, opacity: 0.8 }}>
+                  Forgot your PIN? Contact Platform Admin (<span style={{ fontFamily: 'var(--font-mono)' }}>ADMIN01</span>) to reset it.
+                </p>
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: 0 }}>
+                Already registered?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setIsRegister(false); setError(null); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-gold, #d97706)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                >
+                  Sign in to your account
+                </button>
+              </p>
+            )}
+          </div>
         </form>
       </div>
     </div>
