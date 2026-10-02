@@ -26,6 +26,13 @@ const MainLayout: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Immediately route Faculty Admins to their locked workspace on login
+  useEffect(() => {
+    if (user?.roles?.some(r => r.toLowerCase() === 'faculty_admin') && !user?.roles?.includes('platform_admin')) {
+      setActiveTab('admin');
+    }
+  }, [user]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };

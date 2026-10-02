@@ -9,7 +9,9 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const { hasRole, user } = useAuth();
-  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
+  const isFaculty = user?.roles?.some(r => r.toLowerCase() === 'faculty_admin');
+  const isPlatformAdmin = hasRole('platform_admin');
+  const isAdmin = isFaculty || hasRole('attendance_admin') || isPlatformAdmin || (user as any)?.is_admin;
 
   return (
     <nav className="bottom-tab-bar">

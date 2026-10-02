@@ -30,7 +30,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onOpenSettings,
 }) => {
   const { user, logout, hasRole } = useAuth();
-  const isAdmin = hasRole('attendance_admin') || hasRole('platform_admin') || (user as any)?.is_admin;
+  const isFaculty = user?.roles?.some(r => r.toLowerCase() === 'faculty_admin');
+  const isPlatformAdmin = hasRole('platform_admin');
+  const isAdmin = isFaculty || hasRole('attendance_admin') || isPlatformAdmin || (user as any)?.is_admin;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleConfirmLogout = async () => {
@@ -113,7 +115,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               }}
             >
               <ShieldCheck size={16} />
-              <span>Admin</span>
+              <span>{isFaculty && !isPlatformAdmin ? 'Faculty Admin' : 'Admin'}</span>
             </button>
           )}
         </div>

@@ -15,6 +15,7 @@ from app.routers.content import router as content_router
 from app.routers.prompts import router as prompts_router
 from app.routers.campus import router as campus_router
 from app.routers.admin import router as admin_router
+from app.routers.faculty import router as faculty_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("app")
@@ -75,7 +76,7 @@ async def global_exception_handler(request, exc):
 
 
 # Include all routers under both /api prefix and root to support all Vercel routing modes
-routers = [auth_router, attendance_router, content_router, prompts_router, campus_router, admin_router]
+routers = [auth_router, attendance_router, content_router, prompts_router, campus_router, admin_router, faculty_router]
 for r in routers:
     app.include_router(r, prefix="/api")
     app.include_router(r)

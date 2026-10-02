@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { resolveStudentDepartment, getDepartmentCurriculum } from '../data/r26Curriculum';
 import { growApi, contentApi } from '../api/client';
 import { 
   Sparkles, 
@@ -66,6 +68,119 @@ const FALLBACK_CAREER_TRACKS: Record<string, CareerCard[]> = {
       companies: ['KPMG Cyber', 'Deloitte Risk Advisory', 'Cisco', 'PwC Cyber Defense']
     }
   ],
+  'CSIT': [
+    {
+      title: 'Enterprise Software & Cloud Engineer',
+      demand: 'High Demand · Core Computing',
+      salary: '₹7.5 – 18.0 LPA',
+      summary: 'Design large-scale distributed architectures, enterprise database integrations, and high-availability cloud APIs.',
+      skills: ['Java / Spring Boot', 'Python', 'Docker & Kubernetes', 'PostgreSQL', 'Microservices', 'RESTful APIs'],
+      certifications: ['AWS Certified Solutions Architect', 'Oracle Certified Java Professional'],
+      companies: ['Microsoft', 'Infosys Power Programmer', 'TCS Digital', 'Cognizant GenC Next', 'Accenture']
+    },
+    {
+      title: 'DevOps & Site Reliability Engineer',
+      demand: 'Critical Infrastructure · High Growth',
+      salary: '₹8.0 – 20.0 LPA',
+      summary: 'Automate build deployments, manage container orchestration, and monitor system resilience across hybrid cloud environments.',
+      skills: ['Docker & Kubernetes', 'Terraform', 'CI/CD Pipelines', 'Linux Systems', 'Prometheus & Grafana'],
+      certifications: ['Certified Kubernetes Administrator (CKA)', 'AWS DevOps Engineer'],
+      companies: ['Google Cloud', 'Oracle Cloud', 'Wipro Turbo', 'Persistent Systems']
+    }
+  ],
+  'AIML': [
+    {
+      title: 'Machine Learning & Deep Learning Engineer',
+      demand: 'Exponential Demand · Frontier AI',
+      salary: '₹9.0 – 26.0 LPA',
+      summary: 'Design neural network architectures, train computer vision and NLP models, and deploy scalable ML inference engines.',
+      skills: ['Python', 'PyTorch / TensorFlow', 'Hugging Face', 'NumPy & Pandas', 'OpenCV', 'MLOps & Triton'],
+      certifications: ['Google Professional ML Engineer', 'DeepLearning.AI Specialization'],
+      companies: ['NVIDIA', 'Tiger Analytics', 'Fractal Analytics', 'Bosch AI', 'Qualcomm AI Lab']
+    },
+    {
+      title: 'Generative AI & LLM Systems Specialist',
+      demand: 'Emerging · Frontier Innovation',
+      salary: '₹10.0 – 28.0 LPA',
+      summary: 'Build Retrieval-Augmented Generation (RAG) pipelines, fine-tune open weights LLMs, and implement multi-agent workflows.',
+      skills: ['LangChain / LlamaIndex', 'Vector Databases (Chroma/Pinecone)', 'Python', 'Prompt Engineering', 'FastAPI'],
+      certifications: ['Databricks Generative AI Engineer', 'AWS Machine Learning Specialty'],
+      companies: ['Amazon AWS', 'Microsoft AI', 'Accenture AI Studio', 'TCS AI Labs']
+    }
+  ],
+  'AIDS': [
+    {
+      title: 'Data Science & Predictive Modeling Engineer',
+      demand: 'High Industry Demand · Strategic Analytics',
+      salary: '₹8.0 – 22.0 LPA',
+      summary: 'Analyze massive structured and unstructured datasets, build predictive statistical models, and drive data-informed business decisions.',
+      skills: ['Python / R', 'SQL & Database Warehousing', 'Scikit-Learn', 'Tableau / PowerBI', 'Statistical Modeling'],
+      certifications: ['Google Advanced Data Analytics', 'Microsoft Certified: Power BI Data Analyst'],
+      companies: ['Fractal Analytics', 'Tiger Analytics', 'LatentView', 'Deloitte Analytics', 'Mu Sigma']
+    },
+    {
+      title: 'Big Data Pipeline Architect',
+      demand: 'Critical Data Engineering Surge',
+      salary: '₹8.5 – 24.0 LPA',
+      summary: 'Engineer real-time streaming data ingestion pipelines, ETL workflows, and lakehouse storage platforms for enterprise scale.',
+      skills: ['Apache Spark', 'Kafka', 'SQL', 'Databricks / Snowflake', 'Python', 'AWS S3 & Glue'],
+      certifications: ['Databricks Certified Data Engineer', 'AWS Certified Data Engineer'],
+      companies: ['Walmart Global Tech', 'Tiger Analytics', 'Cognizant', 'TCS Data Practice']
+    }
+  ],
+  'IT': [
+    {
+      title: 'Full-Stack Web & Cloud Developer',
+      demand: 'Consistent High Demand · 92% Placement Index',
+      salary: '₹7.0 – 17.0 LPA',
+      summary: 'Architect responsive modern frontends and cloud microservices backends using TypeScript, React, and serverless architectures.',
+      skills: ['TypeScript', 'React.js', 'Node.js / Express', 'PostgreSQL / MongoDB', 'AWS Cloud', 'Docker'],
+      certifications: ['Meta Full-Stack Professional', 'AWS Certified Developer'],
+      companies: ['Cognizant', 'TCS Digital', 'Accenture', 'Infosys', 'Capgemini']
+    }
+  ],
+  'CSBS': [
+    {
+      title: 'FinTech & Enterprise Solutions Consultant',
+      demand: 'High Enterprise Demand · Techno-Business Blend',
+      salary: '₹8.0 – 20.0 LPA',
+      summary: 'Bridge core software engineering and financial/business systems, engineering enterprise ERP platforms and fintech workflows.',
+      skills: ['Python', 'SQL', 'Financial Data Modeling', 'Enterprise Architecture', 'FastAPI', 'Cloud Computing'],
+      certifications: ['PMI Agile Certified Practitioner', 'AWS Cloud Solutions'],
+      companies: ['TCS Digital (TCS-CSBS Partner)', 'Deloitte', 'KPMG', 'Goldman Sachs', 'Morgan Stanley']
+    }
+  ],
+  'CSD': [
+    {
+      title: 'UI/UX & Interactive Design Systems Engineer',
+      demand: 'Frontier Creative Tech · Product Design',
+      salary: '₹7.5 – 18.0 LPA',
+      summary: 'Synthesize computational design principles, human-computer interaction (HCI), and advanced reactive frontends to build digital product interfaces.',
+      skills: ['Figma & Design Systems', 'React & TypeScript', 'CSS Architecture & Animation', 'HCI Principles', 'User Research'],
+      certifications: ['Google UX Design Professional', 'Nielsen Norman Group UX Master'],
+      companies: ['Adobe', 'Zoho', 'Thoughtworks', 'Swiggy', 'Freshworks']
+    }
+  ],
+  'CIC': [
+    {
+      title: 'Cybersecurity Analyst & Threat Defense Engineer',
+      demand: 'National Strategic Demand · Critical Defense',
+      salary: '₹7.5 – 19.0 LPA',
+      summary: 'Defend organizational networks, identify zero-day vulnerabilities, implement cryptographic access protocols, and manage SOC workflows.',
+      skills: ['Network Security', 'Cryptography', 'SIEM & SOC Tools', 'Wireshark', 'Ethical Hacking', 'Linux Hardening'],
+      certifications: ['CompTIA Security+', 'CEH (Certified Ethical Hacker)', 'Cisco CyberOps'],
+      companies: ['Cisco', 'Palo Alto Networks', 'Deloitte Cyber', 'PwC Defense', 'KPMG Security']
+    },
+    {
+      title: 'Blockchain & Decentralized Ledger Engineer',
+      demand: 'Frontier Emerging Technology',
+      salary: '₹8.5 – 22.0 LPA',
+      summary: 'Engineer smart contracts, consensus algorithms, and decentralized applications (dApps) across secure blockchain networks.',
+      skills: ['Solidity', 'Ethereum / Hyperledger', 'Cryptography', 'Web3.js', 'Go / Rust', 'Distributed Systems'],
+      certifications: ['Certified Blockchain Solution Architect (CBSA)'],
+      companies: ['Polygon', 'ConsenSys', 'Wipro Blockchain', 'Tech Mahindra Makers Lab']
+    }
+  ],
   'ECE': [
     {
       title: 'VLSI Design & Verification Engineer',
@@ -84,6 +199,66 @@ const FALLBACK_CAREER_TRACKS: Record<string, CareerCard[]> = {
       skills: ['Embedded C / C++', 'ARM Cortex Microcontrollers', 'FreeRTOS', 'I2C / SPI / UART protocols', 'PCB Design', 'MQTT & BLE'],
       certifications: ['ARM Embedded Certification', 'Cisco IoT Fundamentals'],
       companies: ['Bosch', 'Continental', 'Tata Elxsi', 'Honeywell', 'Schneider Electric']
+    }
+  ],
+  'EEE': [
+    {
+      title: 'Power Systems & Smart Grid Automation Engineer',
+      demand: 'Energy Transition Demand · Core Infrastructure',
+      salary: '₹6.5 – 16.5 LPA',
+      summary: 'Design electrical distribution systems, smart grid automation networks, substation SCADA telemetry, and power quality controllers.',
+      skills: ['Power World / ETAP', 'MATLAB & Simulink', 'SCADA & PLC Programming', 'Power Electronics', 'Substation Automation'],
+      certifications: ['Siemens Certified Automation Professional', 'IEEE Smart Grid Specialist'],
+      companies: ['L&T Power', 'Schneider Electric', 'ABB', 'Siemens', 'NTPC / PowerGrid']
+    },
+    {
+      title: 'Electric Vehicle (EV) Power Electronics Specialist',
+      demand: 'High Growth · EV & Clean Mobility Boom',
+      salary: '₹7.0 – 18.0 LPA',
+      summary: 'Design DC-DC converters, motor drives, battery management systems (BMS), and regenerative braking controls for electric vehicles.',
+      skills: ['Power Electronics', 'Simulink / MATLAB', 'Battery Management Systems (BMS)', 'Motor Control Algorithms', 'Inverter Design'],
+      certifications: ['Certified EV Systems Engineer', 'MATLAB Simulink Associate'],
+      companies: ['Tata Motors EV', 'Ather Energy', 'Ola Electric', 'Bosch Mobility', 'Mahindra Electric']
+    }
+  ],
+  'CIVIL': [
+    {
+      title: 'Structural Design & BIM Engineer',
+      demand: 'Core Infrastructure Demand · Smart Cities',
+      salary: '₹5.5 – 14.0 LPA',
+      summary: 'Perform structural stress calculations, concrete/steel building analysis, and 3D architectural Building Information Modeling (BIM).',
+      skills: ['AutoCAD & Revit', 'STAAD.Pro / ETABS', 'BIM Coordination', 'Reinforced Concrete Design', 'IS Code Standards'],
+      certifications: ['Autodesk Certified Professional: Revit Structure', 'Bentley STAAD.Pro Specialist'],
+      companies: ['L&T Construction', 'Tata Projects', 'Afcons Infrastructure', 'Shapoorji Pallonji', 'AECOM']
+    },
+    {
+      title: 'Geotechnical & Transportation Infrastructure Engineer',
+      demand: 'National Highways & Metro Infrastructure',
+      salary: '₹5.5 – 13.5 LPA',
+      summary: 'Assess soil mechanics, foundation stability, pavement design, and highway traffic engineering for national infrastructure projects.',
+      skills: ['Geotechnical Analysis', 'MX Road / Civil 3D', 'Soil Mechanics Testing', 'Pavement Design', 'Environmental Impact Assessment'],
+      certifications: ['Certified Transportation Engineering Professional', 'GeoStudio Specialist'],
+      companies: ['NHAI Projects', 'L&T Infrastructure', 'IRCON International', 'RITES Ltd']
+    }
+  ],
+  'MECH': [
+    {
+      title: 'CAD/CAM Design & FEA Simulation Engineer',
+      demand: 'Core Automotive & Aerospace Manufacturing',
+      salary: '₹6.0 – 15.5 LPA',
+      summary: 'Model 3D precision mechanical components, conduct finite element stress analysis (FEA), and prepare CNC manufacturing toolpaths.',
+      skills: ['CATIA / SolidWorks', 'ANSYS Mechanical / Workbench', 'GD&T Standards', 'FEA Structural & Thermal Analysis', 'CNC G-Code'],
+      certifications: ['Dassault Systèmes Certified SolidWorks Professional', 'ANSYS Mechanical Specialist'],
+      companies: ['Tata Motors', 'Mahindra & Mahindra', 'L&T Heavy Engineering', 'Boeing India', 'Godrej Aerospace']
+    },
+    {
+      title: 'Robotics & Mechatronics Automation Engineer',
+      demand: 'Industry 4.0 Surge · Smart Factory Systems',
+      salary: '₹7.0 – 17.5 LPA',
+      summary: 'Integrate multi-axis industrial robotic arms, pneumatic actuators, programmable logic controllers (PLC), and factory automation cells.',
+      skills: ['Robotics Kinematics', 'PLC & SCADA Programming', 'Pneumatics & Hydraulics', 'Industrial Sensors', 'Python & C++ for Robotics'],
+      certifications: ['FANUC Certified Robot Operator', 'Siemens Certified Mechatronics Systems Associate'],
+      companies: ['Bosch', 'ABB Robotics', 'KUKA India', 'Maruti Suzuki Automation', 'Tata Advanced Systems']
     }
   ]
 };
@@ -204,6 +379,10 @@ const YEARLY_MILESTONES = [
 ];
 
 export const Grow: React.FC = () => {
+  const { user } = useAuth();
+  const studentDept = resolveStudentDepartment(user);
+  const curriculum = getDepartmentCurriculum(studentDept);
+
   const [subTab, setSubTab] = useState<'prompts' | 'career' | 'roadmap'>('career');
   const [promptsByCategory, setPromptsByCategory] = useState<Record<string, any[]>>({});
   const [activeCategory, setActiveCategory] = useState<string>('study');
@@ -213,31 +392,78 @@ export const Grow: React.FC = () => {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
 
-  // Career state
+  // Career state: defaults automatically to authenticated student's department
   const [departments, setDepartments] = useState<any[]>([]);
-  const [selectedDept, setSelectedDept] = useState<string>('CSE');
+  const [selectedDept, setSelectedDept] = useState<string>(studentDept);
 
   useEffect(() => {
     growApi.getPrompts().then(setPromptsByCategory).catch(console.error);
     contentApi.getDepartments().then(setDepartments).catch(console.error);
   }, []);
 
+  // Update selectedDept when user updates
+  useEffect(() => {
+    if (user) {
+      const dept = resolveStudentDepartment(user);
+      setSelectedDept(dept);
+    }
+  }, [user]);
+
   const handleOpenPrompt = (p: any) => {
     setSelectedPrompt(p);
-    setFieldValues({});
+    // Automatically pre-populate student's department, year, semester context
+    // Never ask student to type their branch or year manually
+    const initial: Record<string, string> = {};
+    if (p.personalize_fields) {
+      p.personalize_fields.forEach((f: any) => {
+        const idLower = (f.id || '').toLowerCase();
+        if (idLower.includes('branch') || idLower.includes('dept') || idLower.includes('department')) {
+          initial[f.id] = curriculum.name;
+        } else if (idLower.includes('year')) {
+          initial[f.id] = curriculum.academicYear;
+        } else if (idLower.includes('sem') || idLower.includes('semester')) {
+          initial[f.id] = curriculum.semester;
+        } else if (idLower.includes('reg') || idLower.includes('regulation')) {
+          initial[f.id] = curriculum.regulation;
+        } else if (idLower.includes('college')) {
+          initial[f.id] = 'SRKR Engineering College';
+        }
+      });
+    }
+    setFieldValues(initial);
     setCopied(false);
   };
 
   const generateFinalPrompt = () => {
     if (!selectedPrompt) return '';
     let result = selectedPrompt.prompt_template || '';
+
+    // Smart default mapping from student context
+    const autoContext: Record<string, string> = {
+      branch: curriculum.code,
+      department: curriculum.name,
+      year: curriculum.academicYear,
+      semester: curriculum.semester,
+      regulation: curriculum.regulation,
+      college: 'SRKR Engineering College'
+    };
+
     if (selectedPrompt.personalize_fields) {
       selectedPrompt.personalize_fields.forEach((field: any) => {
-        const val = fieldValues[field.id] || `[${field.label}]`;
+        const idLower = (field.id || '').toLowerCase();
+        const val = fieldValues[field.id] || autoContext[idLower] || `[${field.label}]`;
         const regex = new RegExp(`\\{\\{${field.id}\\}\\}`, 'g');
         result = result.replace(regex, val);
       });
     }
+
+    // Prepend intelligent, non-intrusive academic context preamble
+    // Never invent grades, skills, or achievements - only provide authentic academic institutional context
+    if (!result.includes('SRKR Engineering College') && !result.includes(curriculum.code)) {
+      const preamble = `[Academic Context: You are assisting a first-year ${curriculum.name} (${curriculum.code}) undergraduate student at SRKR Engineering College (Regulation ${curriculum.regulation}, ${curriculum.academicYear} · ${curriculum.semester}). Provide rigorous, academically structured guidance tailored to this curriculum without assuming prior background beyond standard 10+2 science and mathematics.]\n\n`;
+      result = preamble + result;
+    }
+
     return result;
   };
 
@@ -249,7 +475,7 @@ export const Grow: React.FC = () => {
   };
 
   const categories = Object.keys(promptsByCategory);
-  const careerCards = FALLBACK_CAREER_TRACKS[selectedDept] || FALLBACK_CAREER_TRACKS['CSE'];
+  const careerCards = FALLBACK_CAREER_TRACKS[selectedDept] || FALLBACK_CAREER_TRACKS[studentDept] || FALLBACK_CAREER_TRACKS['CSE'];
 
   return (
     <div style={{ maxWidth: '100%' }}>

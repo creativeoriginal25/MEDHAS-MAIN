@@ -81,8 +81,8 @@ export const Login: React.FC = () => {
       setError('Please enter your register number.');
       return;
     }
-    if (!pin.trim() || pin.length < 4 || !/^\d+$/.test(pin)) {
-      setError('PIN must be 4 to 6 numeric digits.');
+    if (!pin.trim() || pin.length < 4) {
+      setError('PIN / Password must be at least 4 characters.');
       return;
     }
 
@@ -217,13 +217,11 @@ export const Login: React.FC = () => {
               <input
                 type={showPin ? 'text' : 'password'}
                 className="form-control mono"
-                placeholder={showPin ? '1234' : '••••'}
-                maxLength={6}
-                inputMode="numeric"
-                pattern="[0-9]*"
+                placeholder={showPin ? 'PIN / Password' : '••••'}
+                maxLength={20}
                 autoComplete={isRegister ? 'new-password' : 'current-password'}
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setPin(e.target.value)}
                 required
                 style={{ letterSpacing: '0.15em', fontWeight: 600, paddingRight: '2.5rem' }}
               />

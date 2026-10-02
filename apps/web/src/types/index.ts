@@ -3,7 +3,9 @@ export type RoleType =
   | 'attendance_admin' 
   | 'content_editor' 
   | 'campus_operator' 
-  | 'platform_admin';
+  | 'platform_admin'
+  | 'faculty_admin'
+  | 'branch_hod_admin';
 
 export interface User {
   id: number;

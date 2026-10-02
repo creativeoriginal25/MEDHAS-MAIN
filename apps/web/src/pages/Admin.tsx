@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { FacultyAdminDashboard } from '../components/admin/FacultyAdminDashboard';
 import { 
   ShieldCheck, 
   KeyRound, 
@@ -180,6 +181,25 @@ export const Admin: React.FC = () => {
     setResetError(null);
     setAdminTab('reset');
   };
+
+  const isFacultyAdmin = (user?.roles?.some(r => r.toLowerCase() === 'faculty_admin') || hasRole('faculty_admin')) && !isPlatformAdmin;
+  const isAnyAdmin = isPlatformAdmin || hasRole('attendance_admin') || (user as any)?.is_admin;
+
+  if (isFacultyAdmin) {
+    return <FacultyAdminDashboard />;
+  }
+
+  if (!isAnyAdmin) {
+    return (
+      <div className="ledger-card" style={{ textAlign: 'center', padding: '3rem 1rem', maxWidth: '600px', margin: '2rem auto' }}>
+        <AlertCircle size={36} color="#dc2626" style={{ margin: '0 auto 0.75rem' }} />
+        <h2 className="font-serif" style={{ fontSize: '1.25rem', color: 'var(--ink)' }}>Access Denied</h2>
+        <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem' }}>
+          You do not have administrative or faculty permissions to access this control suite.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>

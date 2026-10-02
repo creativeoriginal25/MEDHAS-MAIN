@@ -11,8 +11,10 @@ import {
   ShieldCheck, 
   AlertTriangle,
   Coffee,
-  CheckCircle2
+  CheckCircle2,
+  GraduationCap
 } from 'lucide-react';
+import { resolveStudentDepartment, getDepartmentCurriculum } from '../data/r26Curriculum';
 
 interface HomeProps {
   setActiveTab: (tab: string) => void;
@@ -24,6 +26,10 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
   const [dashboard, setDashboard] = useState<any>(null);
   const [todayBlocks, setTodayBlocks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Read student's existing department as single source of truth
+  const deptCode = resolveStudentDepartment(user);
+  const curriculum = getDepartmentCurriculum(deptCode);
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -56,7 +62,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
               Academic Ledger Portal
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)', fontFamily: 'var(--font-mono)' }}>
-              SRKR Engineering College · {user?.branch || 'CSE'} Department
+              SRKR Engineering College · {curriculum.name} ({curriculum.code})
             </div>
           </div>
           <span className={`card-header-badge ${isSafe ? 'good' : 'bad'}`}>
@@ -209,6 +215,54 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
             <ArrowRight size={14} />
           </button>
         </div>
+
+        {/* Personalized YOUR ACADEMICS Widget */}
+        <div className="ledger-card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: '1px solid var(--rule)' }}>
+          <div>
+            <div className="card-header-ruled" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="card-header-title" style={{ fontSize: '0.74rem', letterSpacing: '0.08em', color: 'var(--accent-gold)', fontWeight: 800, textTransform: 'uppercase' }}>
+                YOUR ACADEMICS
+              </span>
+              <span className="badge badge-neutral mono-num" style={{ fontWeight: 800 }}>
+                {curriculum.code}
+              </span>
+            </div>
+
+            <div style={{ margin: '0.65rem 0 0.4rem' }}>
+              <h3 className="font-serif" style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--ink)', margin: 0, lineHeight: 1.3 }}>
+                {curriculum.name}
+              </h3>
+              <div style={{ fontSize: '0.78rem', color: 'var(--ink-soft)', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
+                {curriculum.academicYear} · {curriculum.semester}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', margin: '0.75rem 0' }}>
+              <div style={{ flex: 1, padding: '0.55rem 0.65rem', background: 'var(--surface-alt)', border: '1px solid var(--rule)', borderRadius: 'var(--radius-sm)' }}>
+                <div className="mono-num" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)' }}>
+                  {curriculum.theory.length}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 600 }}>Theory Courses</div>
+              </div>
+              <div style={{ flex: 1, padding: '0.55rem 0.65rem', background: 'var(--surface-alt)', border: '1px solid var(--rule)', borderRadius: 'var(--radius-sm)' }}>
+                <div className="mono-num" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)' }}>
+                  {curriculum.labs.length}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 600 }}>Practical Courses</div>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setActiveTab('learn')}
+            style={{ width: '100%', justifyContent: 'space-between', marginTop: '1rem', color: 'var(--accent-gold)', fontWeight: 700 }}
+          >
+            <span>Open Academics →</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Quick Launch Categories */}
@@ -236,7 +290,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
             <BookOpen size={20} color="var(--accent-gold)" style={{ marginBottom: '0.4rem' }} />
             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)' }}>Academic Notes</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-soft)', marginTop: '0.15rem' }}>
-              8 subjects, 40 unit-wise resources & syllabus.
+              {curriculum.code}: {curriculum.theory.length} theory & {curriculum.labs.length} practical courses.
             </div>
           </div>
 
