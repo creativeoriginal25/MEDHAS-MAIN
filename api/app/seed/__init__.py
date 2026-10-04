@@ -255,6 +255,14 @@ PROMPT_TEMPLATES = [
 BOOTSTRAP_USERS = [
     {"register_number": "ADMIN01", "pin": "admin123", "display_name": "Administrator", "branch": "CSE", "section": "A",
      "roles": ["student", "platform_admin", "attendance_admin", "content_editor"]},
+    {"register_number": "FAC_CTPSC", "pin": "faculty123", "display_name": "Faculty — CTPS-C (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_LAC", "pin": "faculty123", "display_name": "Faculty — LAC (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_ECE_PHYSICS", "pin": "faculty123", "display_name": "Faculty — Applied Physics (ECE)", "branch": "ECE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_BEC", "pin": "faculty123", "display_name": "Faculty — BEC (EEE)", "branch": "EEE", "section": "A",
+     "roles": ["faculty_admin"]},
 ]
 
 # ===== CAMPUS SERVICES =====

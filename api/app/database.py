@@ -58,16 +58,53 @@ def _ensure_tmp_db(tmp_db: str):
 
 def get_database_url() -> tuple[str, dict]:
     """Determine the active database URL."""
+    turso_url = (
+        os.environ.get("TURSO_DATABASE_URL")
+        or settings.turso_database_url
+        or ""
+    ).strip().strip("'\"")
+    turso_token = (
+        os.environ.get("TURSO_AUTH_TOKEN")
+        or settings.turso_auth_token
+        or ""
+    ).strip().strip("'\"")
+
     if IS_VERCEL:
+        if turso_url:
+            try:
+                import sqlalchemy_libsql  # noqa: F401 - ensure dialect registered
+                clean_url = turso_url
+                if clean_url.startswith("libsql://"):
+                    clean_url = clean_url[len("libsql://") :]
+                elif clean_url.startswith("https://"):
+                    clean_url = clean_url[len("https://") :]
+                clean_url = clean_url.rstrip("/")
+
+                query_params = ["secure=true"]
+                if turso_token:
+                    query_params.append(f"authToken={turso_token}")
+
+                url = f"sqlite+libsql://{clean_url}/?{'&'.join(query_params)}"
+                logger.info(f"Vercel serverless: using persistent Turso Cloud database at {clean_url}")
+                return url, {"check_same_thread": False}
+            except Exception as e:
+                logger.warning(f"Turso dialect initialization error, falling back to /tmp/app.db: {e}")
+
         tmp_dir = tempfile.gettempdir()
         os.makedirs(tmp_dir, exist_ok=True)
         tmp_db = os.path.join(tmp_dir, "app.db")
         _ensure_tmp_db(tmp_db)
         url = f"sqlite:///{Path(tmp_db).as_posix()}"
-        logger.info(f"Vercel serverless: using SQLite at {tmp_db}")
+        logger.info(f"Vercel serverless: using fallback SQLite at {tmp_db}")
         return url, {"check_same_thread": False}
 
     url = settings.database_url
+    if url.startswith("sqlite:///") and ":memory:" not in url:
+        db_path_str = url.replace("sqlite:///", "", 1)
+        if not os.path.isabs(db_path_str):
+            backend_dir = Path(__file__).resolve().parent.parent
+            resolved_db = (backend_dir / db_path_str.lstrip(".\\/")).resolve()
+            url = f"sqlite:///{resolved_db.as_posix()}"
     logger.info(f"Using local SQLite: {url}")
     return url, {"check_same_thread": False}
 

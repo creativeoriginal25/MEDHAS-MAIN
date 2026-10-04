@@ -10,7 +10,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(CURRENT_DIR)
 BACKEND_DIR = os.path.join(ROOT_DIR, "backend")
 
-for p in [CURRENT_DIR, BACKEND_DIR, ROOT_DIR, "/var/task", "/var/task/api", "/var/task/backend"]:
+for p in [BACKEND_DIR, "/var/task/backend", CURRENT_DIR, ROOT_DIR, "/var/task", "/var/task/api"]:
     if os.path.exists(p) and p not in sys.path:
         sys.path.insert(0, p)
 
