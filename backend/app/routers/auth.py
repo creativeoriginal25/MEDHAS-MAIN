@@ -25,6 +25,16 @@ def _get_client_ip(request: Request) -> str:
     return forwarded.split(",")[0].strip() or (request.client.host if request.client else "127.0.0.1")
 
 
+def normalize_register_number(register_number: str) -> str:
+    """Normalize register number to uppercase and fix common letter O vs digit 0 typos."""
+    reg = register_number.strip().upper()
+    if 'AO5' in reg:
+        reg = reg.replace('AO5', 'A05')
+    elif 'O5' in reg and reg.startswith('2'):
+        reg = reg.replace('O5', '05')
+    return reg
+
+
 def _user_to_dict(user: User, db: Session) -> dict:
     roles = db.query(UserRole).filter(UserRole.user_id == user.id).all()
     role_list = [r.role for r in roles]
@@ -50,13 +60,69 @@ def _user_to_dict(user: User, db: Session) -> dict:
 
 @router.post("/register", response_model=LoginResponse)
 def register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
-    reg = req.register_number.strip().upper()
+    reg = normalize_register_number(req.register_number)
+    pin = req.pin.strip()
+    if len(pin) < 4:
+        raise HTTPException(status_code=400, detail="PIN / Password must be at least 4 characters.")
 
     # Check if user already exists
     existing = db.query(User).filter(User.register_number == reg).first()
     if existing:
-        raise HTTPException(status_code=409, detail="Register number already exists. Please login.")
+        # Security checks to determine if this is an eligible unclaimed pre-seeded student account:
+        # 1. Never allow admin, faculty, or elevated bootstrap accounts to be claimed
+        is_elevated = (
+            reg in ("ADMIN01", "ADMIN", "25B91A05U8", "25B91A05D8", settings.initial_admin_register.upper())
+            or reg.startswith("FAC_")
+        )
+        existing_roles = [r.role for r in existing.roles]
+        has_non_student_role = any(
+            r in ("platform_admin", "attendance_admin", "content_editor", "campus_operator", "faculty_admin", "branch_hod_admin")
+            for r in existing_roles
+        )
 
+        # 2. Check if the account has already been claimed / activated
+        already_activated = db.query(AuditLog).filter(
+            AuditLog.user_id == existing.id,
+            AuditLog.action.in_(["ACCOUNT_ACTIVATED", "CHANGE_PIN", "NEW_REGISTRATION"])
+        ).first() is not None
+
+        if is_elevated or has_non_student_role or already_activated:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Register number '{reg}' is already registered and activated. Please switch to Sign In with your existing PIN.",
+            )
+
+        # CASE 2 — PRE-SEEDED STUDENT ACTIVATION:
+        # Update ONLY the PIN hash and mark as activated in audit_logs.
+        # Do NOT change branch, department, academic_year, semester, section, or roles.
+        existing.pin_hash = hash_pin(pin)
+        existing.consent_given_at = datetime.utcnow()
+        if req.display_name and req.display_name.strip() and (not existing.display_name or existing.display_name == existing.register_number):
+            existing.display_name = req.display_name.strip()
+
+        db.add(AuditLog(
+            user_id=existing.id,
+            register_number=reg,
+            action="ACCOUNT_ACTIVATED",
+            details="Pre-seeded student account claimed and activated.",
+        ))
+        db.commit()
+        db.refresh(existing)
+
+        # Create token & record login session
+        token = create_access_token({"sub": existing.id})
+        session = LoginSession(
+            user_id=existing.id,
+            platform=(req.platform or "web").lower(),
+            token_hash=hash_token(token),
+        )
+        db.add(session)
+        db.commit()
+
+        logger.info(f"Pre-seeded student '{reg}' successfully activated account.")
+        return LoginResponse(token=token, user=_user_to_dict(existing, db))
+
+    # CASE 1 — NEW STUDENT:
     # Find or create section
     section = None
     if req.branch and req.section:
@@ -73,8 +139,8 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
     # Create user
     user = User(
         register_number=reg,
-        pin_hash=hash_pin(req.pin),
-        display_name=req.display_name,
+        pin_hash=hash_pin(pin),
+        display_name=req.display_name.strip() if req.display_name else reg,
         department_id=dept.id if dept else None,
         section_id=section.id if section else None,
         academic_year=req.academic_year or 1,
@@ -99,6 +165,12 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
             if not db.query(UserRole).filter(UserRole.user_id == user.id, UserRole.role == role_name).first():
                 db.add(UserRole(user_id=user.id, role=role_name))
 
+    db.add(AuditLog(
+        user_id=user.id,
+        register_number=reg,
+        action="ACCOUNT_ACTIVATED",
+        details="New student registration.",
+    ))
     db.commit()
     db.refresh(user)
 
@@ -119,13 +191,7 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    reg = req.register_number.strip().upper()
-    # Normalize common typo: capital O instead of 0 in '05'
-    if 'AO5' in reg:
-        reg = reg.replace('AO5', 'A05')
-    elif 'O5' in reg and reg.startswith('2'):
-        reg = reg.replace('O5', '05')
-
+    reg = normalize_register_number(req.register_number)
     pin = req.pin.strip()
     client_ip = _get_client_ip(request)
 

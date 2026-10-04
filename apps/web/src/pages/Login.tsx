@@ -166,7 +166,7 @@ export const Login: React.FC = () => {
             className={`forecast-view-btn ${isRegister ? 'active' : ''}`}
             onClick={() => { setIsRegister(true); setError(null); }}
           >
-            <span>Register New Student</span>
+            <span>Register / Activate</span>
           </button>
         </div>
 
@@ -193,7 +193,7 @@ export const Login: React.FC = () => {
                   fontWeight: 700
                 }}
               >
-                <span>Register {registerNumber ? `'${registerNumber}'` : 'Now'} as New Student →</span>
+                <span>Register / Activate {registerNumber ? `'${registerNumber}'` : 'Now'} →</span>
               </button>
             )}
             {error.toLowerCase().includes('already exists') && isRegister && (
@@ -434,7 +434,7 @@ export const Login: React.FC = () => {
             style={{ width: '100%', padding: '0.75rem', fontWeight: 700 }}
             disabled={loading}
           >
-            {loading ? 'Verifying...' : isRegister ? 'Create Account & Access' : 'Access Attendance Ledger'}
+            {loading ? 'Verifying...' : isRegister ? 'Register / Activate Account' : 'Access Attendance Ledger'}
           </button>
 
           <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid var(--rule)', paddingTop: '1rem' }}>
@@ -447,7 +447,7 @@ export const Login: React.FC = () => {
                     onClick={() => { setIsRegister(true); setError(null); }}
                     style={{ background: 'none', border: 'none', color: 'var(--accent-gold, #d97706)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                   >
-                    Register your Roll Number here
+                    Register or activate your Roll Number here
                   </button>
                 </p>
                 <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', margin: 0, opacity: 0.8 }}>
