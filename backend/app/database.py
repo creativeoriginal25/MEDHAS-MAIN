@@ -56,8 +56,27 @@ def _ensure_tmp_db(tmp_db: str):
     logger.warning("No valid bundled app.db found on disk, will initialize fresh tables.")
 
 
-def get_database_url() -> tuple[str, dict]:
-    """Determine the active database URL."""
+from sqlalchemy.dialects.sqlite.pysqlite import SQLiteDialect_pysqlite
+from sqlalchemy.dialects import registry
+
+
+class LibSQLDialect(SQLiteDialect_pysqlite):
+    """Custom SQLite dialect adapter for LibSQL/Turso driver without create_function calls."""
+    supports_statement_cache = True
+
+    def on_connect_url(self, url):
+        return None
+
+    def on_connect(self):
+        return None
+
+
+registry.impls["sqlite.libsql_turso"] = lambda: LibSQLDialect
+
+
+
+def create_database_engine():
+    """Build the active database engine."""
     turso_url = (
         os.environ.get("TURSO_DATABASE_URL")
         or settings.turso_database_url
@@ -69,35 +88,26 @@ def get_database_url() -> tuple[str, dict]:
         or ""
     ).strip().strip("'\"")
 
-    if IS_VERCEL:
-        if turso_url:
-            try:
-                import sqlalchemy_libsql  # noqa: F401 - ensure dialect registered
-                clean_url = turso_url
-                if clean_url.startswith("libsql://"):
-                    clean_url = clean_url[len("libsql://") :]
-                elif clean_url.startswith("https://"):
-                    clean_url = clean_url[len("https://") :]
-                clean_url = clean_url.rstrip("/")
+    if IS_VERCEL and turso_url:
+        try:
+            import libsql
 
-                query_params = ["secure=true"]
-                if turso_token:
-                    query_params.append(f"authToken={turso_token}")
+            clean_url = turso_url
+            if clean_url.startswith("https://"):
+                clean_url = "libsql://" + clean_url[len("https://"):]
+            elif not clean_url.startswith("libsql://") and not clean_url.startswith("http"):
+                clean_url = "libsql://" + clean_url
 
-                url = f"sqlite+libsql://{clean_url}/?{'&'.join(query_params)}"
-                logger.info(f"Vercel serverless: using persistent Turso Cloud database at {clean_url}")
-                return url, {"check_same_thread": False}
-            except Exception as e:
-                logger.warning(f"Turso dialect initialization error, falling back to /tmp/app.db: {e}")
+            logger.info(f"Vercel serverless: initializing persistent Turso Cloud connection ({clean_url})")
+            return create_engine(
+                "sqlite+libsql_turso://",
+                creator=lambda: libsql.connect(clean_url, auth_token=turso_token),
+                echo=False,
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize Turso engine: {e}", exc_info=True)
 
-        tmp_dir = tempfile.gettempdir()
-        os.makedirs(tmp_dir, exist_ok=True)
-        tmp_db = os.path.join(tmp_dir, "app.db")
-        _ensure_tmp_db(tmp_db)
-        url = f"sqlite:///{Path(tmp_db).as_posix()}"
-        logger.info(f"Vercel serverless: using fallback SQLite at {tmp_db}")
-        return url, {"check_same_thread": False}
-
+    # Local development SQLite
     url = settings.database_url
     if url.startswith("sqlite:///") and ":memory:" not in url:
         db_path_str = url.replace("sqlite:///", "", 1)
@@ -106,28 +116,23 @@ def get_database_url() -> tuple[str, dict]:
             resolved_db = (backend_dir / db_path_str.lstrip(".\\/")).resolve()
             url = f"sqlite:///{resolved_db.as_posix()}"
     logger.info(f"Using local SQLite: {url}")
-    return url, {"check_same_thread": False}
+    return create_engine(url, connect_args={"check_same_thread": False}, echo=False)
 
 
-active_url, connect_args = get_database_url()
-
-engine = create_engine(
-    active_url,
-    connect_args=connect_args,
-    echo=False,
-)
+engine = create_database_engine()
 
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    if "sqlite" in active_url and "libsql" not in active_url:
-        try:
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL;")
-            cursor.execute("PRAGMA foreign_keys=ON;")
-            cursor.close()
-        except Exception:
-            pass
+    if hasattr(dbapi_connection, "cursor"):
+        if type(dbapi_connection).__module__ == "sqlite3":
+            try:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL;")
+                cursor.execute("PRAGMA foreign_keys=ON;")
+                cursor.close()
+            except Exception:
+                pass
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
