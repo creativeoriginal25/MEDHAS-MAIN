@@ -68,6 +68,12 @@ def get_database_url() -> tuple[str, dict]:
         return url, {"check_same_thread": False}
 
     url = settings.database_url
+    if url.startswith("sqlite:///") and ":memory:" not in url:
+        db_path_str = url.replace("sqlite:///", "", 1)
+        if not os.path.isabs(db_path_str):
+            backend_dir = Path(__file__).resolve().parent.parent
+            resolved_db = (backend_dir / db_path_str.lstrip(".\\/")).resolve()
+            url = f"sqlite:///{resolved_db.as_posix()}"
     logger.info(f"Using local SQLite: {url}")
     return url, {"check_same_thread": False}
 
