@@ -2132,6 +2132,98 @@ export interface FacultyAssignment {
 }
 
 export const FACULTY_ASSIGNMENTS: Record<string, FacultyAssignment> = {
+  // 1. CTPS-C (C Programming)
+  'C': {
+    username: 'c',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'Computational Thinking and Problem Solving Using C',
+    subjectId: 'cse-ctps-c',
+    curriculumId: 'R26-CTPSC',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 2. Linear Algebra & Calculus (Mathematics)
+  'MATHS': {
+    username: 'maths',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'Linear Algebra & Calculus',
+    subjectId: 'cse-lac',
+    curriculumId: 'R26-LAC',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 3. Applied Physics
+  'PHYSICS': {
+    username: 'physics',
+    role: 'FACULTY_ADMIN',
+    branch: 'ECE',
+    branchName: 'Electronics and Communication Engineering',
+    subject: 'Applied Physics',
+    subjectId: 'ece-physics',
+    curriculumId: 'R26-AP',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 4. Applied Chemistry
+  'CHEMISTRY': {
+    username: 'chemistry',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'Applied Chemistry for Engineering Technologies',
+    subjectId: 'cse-acet',
+    curriculumId: 'R26-ACET',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 5. English for Technical Communication
+  'ENGLISH': {
+    username: 'english',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'English for Technical Communication',
+    subjectId: 'cse-etc',
+    curriculumId: 'R26-ETC',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 6. Design Thinking and Innovation
+  'DT': {
+    username: 'dt',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'Design Thinking and Innovation',
+    subjectId: 'cse-dti',
+    curriculumId: 'R26-DTI',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // 7. Universal Human Values-II
+  'UHV': {
+    username: 'uhv',
+    role: 'FACULTY_ADMIN',
+    branch: 'CSE',
+    branchName: 'Computer Science and Engineering',
+    subject: 'Universal Human Values-II',
+    subjectId: 'cse-uhv',
+    curriculumId: 'R26-UHV2',
+    subjectType: 'theory',
+    year: 1,
+    semester: 1,
+  },
+  // Legacy aliases
   'FAC_CTPSC': {
     username: 'fac_ctpsc',
     role: 'FACULTY_ADMIN',

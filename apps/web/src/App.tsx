@@ -12,6 +12,8 @@ import { Campus } from './pages/Campus';
 import { Profile } from './pages/Profile';
 import { Admin } from './pages/Admin';
 
+import { FacultyPortal } from './pages/FacultyPortal';
+
 const MainLayout: React.FC = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('attendance');
@@ -25,13 +27,6 @@ const MainLayout: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
-
-  // Immediately route Faculty Admins to their locked workspace on login
-  useEffect(() => {
-    if (user?.roles?.some(r => r.toLowerCase() === 'faculty_admin') && !user?.roles?.includes('platform_admin')) {
-      setActiveTab('admin');
-    }
-  }, [user]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -64,6 +59,12 @@ const MainLayout: React.FC = () => {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  // Pure isolated Faculty Resource Portal — ZERO student navigation
+  const isFacultyOnly = user?.roles?.some(r => r.toLowerCase() === 'faculty_admin') && !user?.roles?.includes('platform_admin');
+  if (isFacultyOnly) {
+    return <FacultyPortal />;
   }
 
   return (

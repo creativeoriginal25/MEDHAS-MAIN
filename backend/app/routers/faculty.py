@@ -32,6 +32,98 @@ MEDHAS_RESOURCE_API = "https://script.google.com/macros/s/AKfycbx0oMKPLduC-JX52t
 # R26 CENTRALIZED FACULTY ASSIGNMENT REGISTRY (Single Source of Truth)
 # =====================================================================
 FACULTY_ASSIGNMENTS: Dict[str, Dict[str, Any]] = {
+    # 1. CTPS-C (C Programming)
+    "C": {
+        "username": "c",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "Computational Thinking and Problem Solving Using C",
+        "subjectId": "cse-ctps-c",
+        "curriculumId": "R26-CTPSC",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 2. Linear Algebra & Calculus (Mathematics)
+    "MATHS": {
+        "username": "maths",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "Linear Algebra & Calculus",
+        "subjectId": "cse-lac",
+        "curriculumId": "R26-LAC",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 3. Applied Physics
+    "PHYSICS": {
+        "username": "physics",
+        "role": "FACULTY_ADMIN",
+        "branch": "ECE",
+        "branchName": "Electronics and Communication Engineering",
+        "subject": "Applied Physics",
+        "subjectId": "ece-physics",
+        "curriculumId": "R26-AP",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 4. Applied Chemistry
+    "CHEMISTRY": {
+        "username": "chemistry",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "Applied Chemistry for Engineering Technologies",
+        "subjectId": "cse-acet",
+        "curriculumId": "R26-ACET",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 5. English for Technical Communication
+    "ENGLISH": {
+        "username": "english",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "English for Technical Communication",
+        "subjectId": "cse-etc",
+        "curriculumId": "R26-ETC",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 6. Design Thinking and Innovation
+    "DT": {
+        "username": "dt",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "Design Thinking and Innovation",
+        "subjectId": "cse-dti",
+        "curriculumId": "R26-DTI",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # 7. Universal Human Values-II
+    "UHV": {
+        "username": "uhv",
+        "role": "FACULTY_ADMIN",
+        "branch": "CSE",
+        "branchName": "Computer Science and Engineering",
+        "subject": "Universal Human Values-II",
+        "subjectId": "cse-uhv",
+        "curriculumId": "R26-UHV2",
+        "subjectType": "theory",
+        "year": 1,
+        "semester": 1,
+    },
+    # Legacy aliases for backwards compatibility with existing test scripts
     "FAC_CTPSC": {
         "username": "fac_ctpsc",
         "role": "FACULTY_ADMIN",
@@ -127,7 +219,12 @@ def require_faculty_or_platform_admin(
 ) -> User:
     """Dependency ensuring caller is an authenticated faculty admin or platform admin."""
     roles = get_user_roles(user, db)
-    if "faculty_admin" not in roles and "platform_admin" not in roles:
+    reg = user.register_number.upper().strip()
+    is_faculty_assigned = (
+        reg in FACULTY_ASSIGNMENTS
+        or any(a["username"].upper() == reg for a in FACULTY_ASSIGNMENTS.values())
+    )
+    if "faculty_admin" not in roles and "platform_admin" not in roles and not is_faculty_assigned:
         # Also check hardcoded admin list for compatibility
         if user.register_number not in ("ADMIN01", "25B91A05U8"):
             raise HTTPException(
@@ -150,6 +247,7 @@ class ResourceUploadRequest(BaseModel):
     fileBase64: Optional[str] = ""
     # Fields submitted by client to test server-side tampering prevention
     branch: Optional[str] = None
+    subject: Optional[str] = None
     subjectId: Optional[str] = None
     year: Optional[int] = None
     semester: Optional[int] = None
@@ -183,13 +281,33 @@ def parse_resource_scope(subject_str: str) -> Dict[str, Any]:
             year = 1
             semester = 1
     else:
-        # Legacy without colon, e.g. "1styearclanguage", "1styearmaths", "1styearphysics", "1styearbeee"
-        if "clanguage" in sub_key or "maths" in sub_key:
+        # Legacy without colon, e.g. "1styearclanguage", "1styearmaths", "1styearphysics", "1styearchemistry", etc.
+        if "clanguage" in sub_key:
+            branch = "CSE"
+            year = 1
+            semester = 1
+        elif "maths" in sub_key or "math" in sub_key:
             branch = "CSE"
             year = 1
             semester = 1
         elif "physics" in sub_key:
             branch = "ECE"
+            year = 1
+            semester = 1
+        elif "chemistry" in sub_key:
+            branch = "CSE"
+            year = 1
+            semester = 1
+        elif "english" in sub_key:
+            branch = "CSE"
+            year = 1
+            semester = 1
+        elif "dt" in sub_key:
+            branch = "CSE"
+            year = 1
+            semester = 1
+        elif "uhv" in sub_key:
+            branch = "CSE"
             year = 1
             semester = 1
         elif "beee" in sub_key or "bec" in sub_key:
@@ -236,6 +354,18 @@ def matches_faculty_scope(item: Dict[str, Any], scope: Dict[str, Any]) -> bool:
         # LAC / Mathematics
         if any(k in sub_id or k in curr_id for k in ["lac", "math"]):
             return any(k in row_sub for k in ["lac", "math", "1styearmaths", "cse-lac", "r26-lac"])
+        # Chemistry / ACET
+        if any(k in sub_id or k in curr_id for k in ["chem", "acet"]):
+            return any(k in row_sub for k in ["chem", "acet", "1styearchemistry", "cse-acet", "r26-acet"])
+        # English / ETC
+        if any(k in sub_id or k in curr_id for k in ["eng", "etc"]):
+            return any(k in row_sub for k in ["eng", "etc", "1styearenglish", "cse-etc", "r26-etc"])
+        # DT / DTI
+        if any(k in sub_id or k in curr_id for k in ["dt", "dti"]):
+            return any(k in row_sub for k in ["dt", "dti", "1styeardt", "cse-dti", "r26-dti"])
+        # UHV / Universal Human Values
+        if any(k in sub_id or k in curr_id for k in ["uhv"]):
+            return any(k in row_sub for k in ["uhv", "1styearuhv", "cse-uhv", "r26-uhv2"])
     elif branch == "ECE":
         # Applied Physics
         if any(k in sub_id or k in curr_id for k in ["physic", "ap"]):
@@ -342,6 +472,14 @@ async def upload_faculty_resource(
             detail=f"Authorization Error: Malicious or invalid branch payload '{req.branch}'. Your authenticated scope is strictly locked to '{scope['branch']}'.",
         )
 
+    if req.subject:
+        clean_sub_name = req.subject.strip().lower()
+        if clean_sub_name != scope["subject"].lower() and clean_sub_name != scope["subjectId"].lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Authorization Error: Invalid subject name payload '{req.subject}'. Your authenticated scope is strictly locked to '{scope['subject']}'.",
+            )
+
     if req.subjectId:
         clean_sub = req.subjectId.strip().lower()
         valid_subs = {scope["subjectId"].lower(), scope["curriculumId"].lower()}
@@ -374,6 +512,14 @@ async def upload_faculty_resource(
         legacy_subject = "1styearmaths"
     elif "physic" in sub_id or "ap" in sub_id:
         legacy_subject = "1styearphysics"
+    elif "chem" in sub_id or "acet" in sub_id:
+        legacy_subject = "1styearchemistry"
+    elif "eng" in sub_id or "etc" in sub_id:
+        legacy_subject = "1styearenglish"
+    elif "dt" in sub_id or "dti" in sub_id:
+        legacy_subject = "1styeardt"
+    elif "uhv" in sub_id:
+        legacy_subject = "1styearuhv"
     elif "bec" in sub_id or "circuit" in sub_id or "beee" in sub_id:
         legacy_subject = "1styearbeee"
 
@@ -401,18 +547,29 @@ async def upload_faculty_resource(
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
             resp = await client.post(MEDHAS_RESOURCE_API, data={"payload": json.dumps(apps_script_payload)})
-            # If Google Apps Script returned DriveApp permission error, gracefully fallback to folder link
-            if apps_script_payload["fileUpload"] and ("Exception" in resp.text or resp.status_code != 200 or "<!DOCTYPE html>" in resp.text):
+            # If Google Apps Script returned DriveApp permission error or HTML, gracefully fallback to folder link
+            if apps_script_payload["fileUpload"] and (
+                "Exception" in resp.text
+                or resp.status_code != 200
+                or "<!DOCTYPE html>" in resp.text
+                or "<!DOCTYPE" in resp.text
+                or ("ok" not in resp.text and "true" not in resp.text)
+            ):
                 logger.warning("Apps Script DriveApp authorization not completed; storing link to Drive folder.")
                 apps_script_payload["fileUpload"] = False
-                if not apps_script_payload["link"]:
+                apps_script_payload["fileBase64"] = ""
+                apps_script_payload.pop("fileBase64", None)
+                if not apps_script_payload.get("link"):
                     apps_script_payload["link"] = "https://drive.google.com/drive/folders/1QwnjO4oohqJbifbWvh-v88rb4f-ov7ci"
                 resp = await client.post(MEDHAS_RESOURCE_API, data={"payload": json.dumps(apps_script_payload)})
 
             if resp.status_code != 200 or ("ok" not in resp.text and "true" not in resp.text):
+                err_detail = "Google Apps Script rejected the resource payload. Please provide a direct Google Drive link or verify your connection."
+                if "<!DOCTYPE" not in resp.text:
+                    err_detail = f"Google Apps Script failed to save resource: {resp.text[:200]}"
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Google Apps Script failed to save resource: {resp.text[:200]}",
+                    detail=err_detail,
                 )
     except httpx.RequestError as e:
         logger.error(f"Network error communicating with Google Apps Script: {e}")
@@ -611,6 +768,30 @@ async def get_student_resources(
         # CSE — LAC / Mathematics
         if clean_branch == "CSE" and any(k in clean_sub for k in ["lac", "math"]):
             if any(k in s for k in ["lac", "math", "1styearmaths", "cse-lac", "r26-lac"]):
+                matching.append(item)
+                continue
+
+        # CSE — Applied Chemistry
+        if clean_branch == "CSE" and any(k in clean_sub for k in ["chem", "acet"]):
+            if any(k in s for k in ["chem", "acet", "1styearchemistry", "cse-acet", "r26-acet"]):
+                matching.append(item)
+                continue
+
+        # CSE — English for Technical Communication
+        if clean_branch == "CSE" and any(k in clean_sub for k in ["eng", "etc"]):
+            if any(k in s for k in ["eng", "etc", "1styearenglish", "cse-etc", "r26-etc"]):
+                matching.append(item)
+                continue
+
+        # CSE — Design Thinking and Innovation
+        if clean_branch == "CSE" and any(k in clean_sub for k in ["dt", "dti"]):
+            if any(k in s for k in ["dt", "dti", "1styeardt", "cse-dti", "r26-dti"]):
+                matching.append(item)
+                continue
+
+        # CSE — Universal Human Values
+        if clean_branch == "CSE" and any(k in clean_sub for k in ["uhv"]):
+            if any(k in s for k in ["uhv", "1styearuhv", "cse-uhv", "r26-uhv2"]):
                 matching.append(item)
                 continue
 

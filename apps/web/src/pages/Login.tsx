@@ -21,6 +21,12 @@ const BRANCH_CODE_MAP: Record<string, string> = {
 export const Login: React.FC = () => {
   const { login, register } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
+  const [isFacultyLogin, setIsFacultyLogin] = useState(() => {
+    return window.location.pathname.includes('/faculty') || window.location.hash.includes('faculty');
+  });
+  const [facultyUsername, setFacultyUsername] = useState('');
+  const [facultyPassword, setFacultyPassword] = useState('');
+  const [showFacultyPassword, setShowFacultyPassword] = useState(false);
   const [registerNumber, setRegisterNumber] = useState('');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -124,6 +130,31 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleFacultySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const u = facultyUsername.trim().toLowerCase();
+    if (!u) {
+      setError('Please enter your subject username (e.g., c, maths, physics, chemistry, english, dt, uhv).');
+      return;
+    }
+    if (!facultyPassword.trim()) {
+      setError('Please enter your password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login(u, facultyPassword.trim());
+    } catch (err: any) {
+      setError(err.message || 'Faculty login failed. Please verify your subject username and password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -133,6 +164,121 @@ export const Login: React.FC = () => {
       padding: '1.5rem',
       background: 'var(--bg)',
     }}>
+      {isFacultyLogin ? (
+        <div className="ledger-card" style={{
+          maxWidth: '440px',
+          width: '100%',
+          padding: '2rem',
+          boxShadow: '0 16px 36px rgba(36, 27, 78, 0.14)',
+        }}>
+          {/* Faculty Brand Header */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div className="brand-crest" style={{ margin: '0 auto 0.75rem', width: '48px', height: '48px' }}>
+              <ShieldCheck size={24} className="brand-icon-glyph" />
+            </div>
+            <h1 className="font-serif" style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--ink)' }}>
+              MEDHAS
+            </h1>
+            <p style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.2rem' }}>
+              Faculty Resource Portal
+            </p>
+            <span style={{
+              display: 'inline-block',
+              marginTop: '0.4rem',
+              padding: '0.2rem 0.6rem',
+              background: 'rgba(230, 162, 60, 0.12)',
+              color: '#b45309',
+              borderRadius: '12px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+            }}>
+              Academic Resource Publisher
+            </span>
+          </div>
+
+          {error && (
+            <div className="alert-callout error" style={{ padding: '0.85rem 1rem', marginBottom: '1.25rem' }}>
+              <AlertCircle size={18} style={{ flexShrink: 0, color: 'var(--bad, #dc2626)' }} />
+              <span style={{ fontSize: '0.85rem', lineHeight: 1.45, fontWeight: 500 }}>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleFacultySubmit}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Subject Username *</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--ink-soft)' }}>e.g. c, maths, physics</span>
+              </label>
+              <div className="input-group">
+                <span className="input-prefix"><User size={16} /></span>
+                <input
+                  type="text"
+                  className="form-control mono"
+                  placeholder="Subject ID (e.g. c, maths, physics)"
+                  value={facultyUsername}
+                  onChange={(e) => setFacultyUsername(e.target.value.toLowerCase())}
+                  autoFocus
+                  autoComplete="username"
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="form-label">Password *</label>
+              <div className="input-group">
+                <span className="input-prefix"><Lock size={16} /></span>
+                <input
+                  type={showFacultyPassword ? 'text' : 'password'}
+                  className="form-control mono"
+                  placeholder="Enter password"
+                  value={facultyPassword}
+                  onChange={(e) => setFacultyPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFacultyPassword(!showFacultyPassword)}
+                  className="input-suffix-btn"
+                  tabIndex={-1}
+                >
+                  {showFacultyPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.75rem', fontWeight: 700 }}
+              disabled={loading}
+            >
+              {loading ? 'Authenticating...' : 'Access Faculty Portal'}
+            </button>
+
+            <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid var(--rule)', paddingTop: '1rem' }}>
+              <button
+                type="button"
+                onClick={() => { setIsFacultyLogin(false); setError(null); }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--ink-soft)',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                ← Back to Student Sign-In
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
       <div className="ledger-card" style={{
         maxWidth: '440px',
         width: '100%',
@@ -440,19 +586,31 @@ export const Login: React.FC = () => {
           <div style={{ marginTop: '1.25rem', textAlign: 'center', borderTop: '1px solid var(--rule)', paddingTop: '1rem' }}>
             {!isRegister ? (
               <div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: '0 0 0.4rem 0' }}>
-                  First time using Medhas?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setIsRegister(true); setError(null); }}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-gold, #d97706)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                  >
-                    Register or activate your Roll Number here
-                  </button>
-                </p>
-                <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', margin: 0, opacity: 0.8 }}>
-                  Forgot your PIN? Contact Platform Admin (<span style={{ fontFamily: 'var(--font-mono)' }}>ADMIN01</span>) to reset it.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => { setIsFacultyLogin(true); setError(null); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    width: '100%',
+                    padding: '0.65rem 1rem',
+                    background: 'rgba(36, 35, 76, 0.04)',
+                    border: '1px solid var(--rule)',
+                    borderRadius: '8px',
+                    color: 'var(--ink)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(36, 35, 76, 0.08)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(36, 35, 76, 0.04)')}
+                >
+                  <ShieldCheck size={16} color="var(--accent-gold, #d97706)" />
+                  <span>Faculty Access — Resource Portal</span>
+                </button>
               </div>
             ) : (
               <p style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', margin: 0 }}>
@@ -469,6 +627,7 @@ export const Login: React.FC = () => {
           </div>
         </form>
       </div>
+      )}
     </div>
   );
 };

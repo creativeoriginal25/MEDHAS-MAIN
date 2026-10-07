@@ -18,8 +18,8 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    register_number: str = Field(..., min_length=5, max_length=20)
-    pin: str = Field(..., min_length=4, max_length=20)
+    register_number: str = Field(..., min_length=1, max_length=30)
+    pin: str = Field(..., min_length=4, max_length=30)
     platform: Optional[str] = "web"
 
 

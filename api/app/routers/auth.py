@@ -58,12 +58,33 @@ def _user_to_dict(user: User, db: Session) -> dict:
     }
 
 
+FACULTY_DEFAULT_USERNAMES = {
+    "C": {"branch": "CSE", "name": "Faculty — CTPS-C (CSE)"},
+    "MATHS": {"branch": "CSE", "name": "Faculty — LAC (CSE)"},
+    "PHYSICS": {"branch": "ECE", "name": "Faculty — Applied Physics (ECE)"},
+    "CHEMISTRY": {"branch": "CSE", "name": "Faculty — Applied Chemistry (CSE)"},
+    "ENGLISH": {"branch": "CSE", "name": "Faculty — English (CSE)"},
+    "DT": {"branch": "CSE", "name": "Faculty — Design Thinking (CSE)"},
+    "UHV": {"branch": "CSE", "name": "Faculty — Universal Human Values (CSE)"},
+    "FAC_CTPSC": {"branch": "CSE", "name": "Faculty — CTPS-C (CSE)"},
+    "FAC_LAC": {"branch": "CSE", "name": "Faculty — LAC (CSE)"},
+    "FAC_ECE_PHYSICS": {"branch": "ECE", "name": "Faculty — Applied Physics (ECE)"},
+    "FAC_BEC": {"branch": "EEE", "name": "Faculty — BEC (EEE)"},
+}
+
+
 @router.post("/register", response_model=LoginResponse)
 def register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     reg = normalize_register_number(req.register_number)
     pin = req.pin.strip()
     if len(pin) < 4:
         raise HTTPException(status_code=400, detail="PIN / Password must be at least 4 characters.")
+
+    if reg in FACULTY_DEFAULT_USERNAMES or reg.startswith("FAC_"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Faculty accounts cannot be registered through student portal. Please sign in via Faculty Access.",
+        )
 
     # Check if user already exists
     existing = db.query(User).filter(User.register_number == reg).first()
@@ -199,8 +220,30 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.register_number == reg).first()
 
+    # Self-healing faculty provisioning: Ensure faculty accounts exist with faculty_admin role
+    if not user and reg in FACULTY_DEFAULT_USERNAMES:
+        f_meta = FACULTY_DEFAULT_USERNAMES[reg]
+        dept = db.query(Department).filter(Department.code == f_meta["branch"]).first()
+        section = db.query(Section).filter(Section.branch == f_meta["branch"]).first()
+        user = User(
+            register_number=reg,
+            pin_hash=hash_pin("MEDHAS2026"),
+            display_name=f_meta["name"],
+            department_id=dept.id if dept else None,
+            section_id=section.id if section else None,
+            academic_year=1,
+            current_semester=1,
+            consent_given_at=datetime.utcnow(),
+        )
+        db.add(user)
+        db.flush()
+        db.add(UserRole(user_id=user.id, role="faculty_admin"))
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Auto-provisioned faculty admin account '{reg}'")
+
     # Self-healing auto-provisioning: if a student roll number is not in DB yet, create profile on first login
-    if not user and len(reg) >= 5 and not reg.startswith("FAC_"):
+    if not user and len(reg) >= 5 and not reg.startswith("FAC_") and reg not in FACULTY_DEFAULT_USERNAMES:
         branch_code = "CSE"
         if len(reg) >= 8:
             code = reg[6:8]
@@ -250,14 +293,23 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if user:
         is_valid = verify_pin(pin, user.pin_hash)
 
+        # Faculty authentication check: accepts hashed MEDHAS2026
+        is_faculty_user = (
+            reg in FACULTY_DEFAULT_USERNAMES
+            or any(r.role == "faculty_admin" for r in user.roles)
+        )
+        if not is_valid and is_faculty_user and pin == "MEDHAS2026":
+            is_valid = True
+            user.pin_hash = hash_pin("MEDHAS2026")
+            db.commit()
         # Universal fallback credentials for college testing:
         # 1. Any student or user with demo PIN 1234
-        if not is_valid and pin == "1234":
+        elif not is_valid and pin == "1234":
             is_valid = True
             user.pin_hash = hash_pin("1234")
             db.commit()
-        # 2. Faculty fallback (accepts faculty123 or 1234)
-        elif not is_valid and reg.startswith("FAC_") and pin in ("faculty123", "1234"):
+        # 2. Faculty legacy fallback (accepts faculty123)
+        elif not is_valid and reg.startswith("FAC_") and pin == "faculty123":
             is_valid = True
             user.pin_hash = hash_pin(pin)
             db.commit()

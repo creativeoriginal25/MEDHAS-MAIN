@@ -9,6 +9,7 @@ Data sources:
 
 import json
 import logging
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.auth.security import hash_pin
@@ -255,13 +256,28 @@ PROMPT_TEMPLATES = [
 BOOTSTRAP_USERS = [
     {"register_number": "ADMIN01", "pin": "admin123", "display_name": "Administrator", "branch": "CSE", "section": "A",
      "roles": ["student", "platform_admin", "attendance_admin", "content_editor"]},
-    {"register_number": "FAC_CTPSC", "pin": "faculty123", "display_name": "Faculty — CTPS-C (CSE)", "branch": "CSE", "section": "A",
+    {"register_number": "C", "pin": "MEDHAS2026", "display_name": "Faculty — CTPS-C (CSE)", "branch": "CSE", "section": "A",
      "roles": ["faculty_admin"]},
-    {"register_number": "FAC_LAC", "pin": "faculty123", "display_name": "Faculty — LAC (CSE)", "branch": "CSE", "section": "A",
+    {"register_number": "MATHS", "pin": "MEDHAS2026", "display_name": "Faculty — LAC (CSE)", "branch": "CSE", "section": "A",
      "roles": ["faculty_admin"]},
-    {"register_number": "FAC_ECE_PHYSICS", "pin": "faculty123", "display_name": "Faculty — Applied Physics (ECE)", "branch": "ECE", "section": "A",
+    {"register_number": "PHYSICS", "pin": "MEDHAS2026", "display_name": "Faculty — Applied Physics (ECE)", "branch": "ECE", "section": "A",
      "roles": ["faculty_admin"]},
-    {"register_number": "FAC_BEC", "pin": "faculty123", "display_name": "Faculty — BEC (EEE)", "branch": "EEE", "section": "A",
+    {"register_number": "CHEMISTRY", "pin": "MEDHAS2026", "display_name": "Faculty — Applied Chemistry (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "ENGLISH", "pin": "MEDHAS2026", "display_name": "Faculty — English (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "DT", "pin": "MEDHAS2026", "display_name": "Faculty — Design Thinking (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "UHV", "pin": "MEDHAS2026", "display_name": "Faculty — Universal Human Values (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    # Legacy aliases
+    {"register_number": "FAC_CTPSC", "pin": "MEDHAS2026", "display_name": "Faculty — CTPS-C (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_LAC", "pin": "MEDHAS2026", "display_name": "Faculty — LAC (CSE)", "branch": "CSE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_ECE_PHYSICS", "pin": "MEDHAS2026", "display_name": "Faculty — Applied Physics (ECE)", "branch": "ECE", "section": "A",
+     "roles": ["faculty_admin"]},
+    {"register_number": "FAC_BEC", "pin": "MEDHAS2026", "display_name": "Faculty — BEC (EEE)", "branch": "EEE", "section": "A",
      "roles": ["faculty_admin"]},
 ]
 
@@ -294,13 +310,20 @@ def seed_database():
                         display_name=u_data["display_name"],
                         department_id=d_id,
                         section_id=s_id,
+                        academic_year=1,
+                        current_semester=1,
+                        consent_given_at=datetime.utcnow(),
                     )
                     db.add(new_u)
                     db.flush()
                     for r in u_data["roles"]:
                         db.add(UserRole(user_id=new_u.id, role=r))
+                elif "faculty_admin" in u_data["roles"]:
+                    existing.pin_hash = hash_pin("MEDHAS2026")
+                    if not any(r.role == "faculty_admin" for r in existing.roles):
+                        db.add(UserRole(user_id=existing.id, role="faculty_admin"))
             db.commit()
-            logger.info("Ensured demo users exist.")
+            logger.info("Ensured demo users and faculty accounts exist.")
             return
 
         logger.info("Seeding database...")
